@@ -1,7 +1,7 @@
 {
-  "name": "moleculer-macrometa",
+  "name": "moleculer-db-adapter-macrometa",
   "version": "0.1.0",
-  "description": "Data access service for MacroMeta.io",
+  "description": "MacroMeta.io DB adapter for Moleculer DB service.",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon examples/index.js",
@@ -17,22 +17,27 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/moleculerjs/moleculer-macrometa.git"
+    "url": "https://github.com/moleculerjs/moleculer-db-adapter-macrometa.git"
   },
   "author": "MoleculerJS",
   "license": "MIT",
   "peerDependencies": {
-    "moleculer": "^0.13.0"
+    "moleculer": "^0.13.0 || ^0.14.0"
+  },
+  "dependencies": {
+    "jsc8": "^0.14.2"
   },
   "devDependencies": {
     "benchmarkify": "^2.1.2",
-    "coveralls": "^3.0.7",
-    "eslint": "^6.5.1",
+    "coveralls": "^3.0.8",
+    "eslint": "^6.7.1",
     "jest": "^24.9.0",
     "jest-cli": "^24.9.0",
     "moleculer": "^0.13.0",
+    "moleculer-db": "^0.8.4",
+    "moleculer-docgen": "^0.2.2",
     "moleculer-repl": "^0.6.1",
-    "nodemon": "^1.19.4",
+    "nodemon": "^2.0.1",
     "npm-check": "5.9.0"
   },
   "jest": {
@@ -48,8 +53,5 @@
   },
   "engines": {
     "node": ">= 8.x.x"
-  },
-  "dependencies": {
-    "jsc8": "^0.12.9"
   }
 }
