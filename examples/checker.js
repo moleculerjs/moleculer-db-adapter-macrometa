@@ -19,8 +19,14 @@ class ModuleChecker {
 
 	async check(title, fn, cb) {
 		this.printTitle(title);
+		const startTime = process.hrtime();
+		let dur;
 		try {
 			const rsp = await fn();
+
+			const diff = process.hrtime(startTime);
+			dur = (diff[0] + diff[1] / 1e9) * 1000;
+			
 			let res = cb(rsp);
 			if (Array.isArray(res))
 				res.map(r => this.checkValid(r));
@@ -32,6 +38,7 @@ class ModuleChecker {
 			console.error(err);
 			this.fail++;
 		}
+		console.log(kleur.grey(`Time: ${dur.toFixed(2)} ms`));
 	}
 
 	printTitle(text) {
@@ -55,13 +62,13 @@ class ModuleChecker {
 
 	printTotal() {
 		const failed = this.fail > 0 || this.ok < this.okCount;
-		console.log();
+		console.log("");
 		if (!failed)
 			console.log(kleur.bgGreen().yellow().bold(`--- OK: ${this.ok} of ${this.okCount} ---`));
 		else
 			console.log(kleur.bgRed().yellow().bold(`--- OK: ${this.ok} of ${this.okCount} --- FAILED!`));
 
-		console.log();
+		console.log("");
 	}
 }
 

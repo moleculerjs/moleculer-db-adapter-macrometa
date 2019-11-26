@@ -190,16 +190,16 @@ class MacroMetaAdapter {
 	 *
 	 * @memberof MacroMetaAdapter
 	 */
-	findByIds(idList) {
-		// TODO: not implemented
-		throw new Error("not implemented");
-		/*
-		return this.collection.find({
-			_id: {
-				$in: idList.map(id => this.stringToObjectID(id))
-			}
-		}).toArray();
-		*/
+	async findByIds(idList, opts) {
+		const cursor = await this.fabric.query(`
+			FOR row IN ${this.collection.name} 
+			  FILTER row._id IN @idList
+			  RETURN row`, { idList }, opts);
+
+		const res = await cursor.all();
+		//cursor.delete(); // no 'await' because we don't want to wait for it.
+
+		return res;
 	}
 
 	/**
@@ -260,9 +260,20 @@ class MacroMetaAdapter {
 	 *
 	 * @memberof MacroMetaAdapter
 	 */
-	updateMany(query, update) {
-		// TODO: not implemented
-		throw new Error("not implemented");
+	async updateMany(query, update, opts) {
+		const cursor = await this.fabric.query(`
+			FOR row IN ${this.collection.name} 
+			  ${this.transformQuery(query)}
+			  UPDATE row WITH
+			    ${JSON.stringify(update)}
+			  IN ${this.collection.name}
+			  RETURN NEW._id
+			  `, {}, opts);
+
+		const res = await cursor.all();
+		//cursor.delete(); // no 'await' because we don't want to wait for it.
+
+		return res.length;		
 	}
 
 	/**
@@ -275,8 +286,9 @@ class MacroMetaAdapter {
 	 *
 	 * @memberof MacroMetaAdapter
 	 */
-	updateById(_id, update, opts) {
-		return this.collection.update(_id, update, Object.assign({ returnNew : true }, opts));
+	async updateById(_id, update, opts) {
+		const res = await this.collection.update(_id, update, Object.assign({ returnNew : true }, opts));
+		return res ? res["new"] : null;
 	}
 
 	/**
@@ -287,9 +299,17 @@ class MacroMetaAdapter {
 	 *
 	 * @memberof MacroMetaAdapter
 	 */
-	removeMany(query) {
-		// TODO: not implemented
-		throw new Error("not implemented");
+	async removeMany(query, opts) {
+		const cursor = await this.fabric.query(`
+			FOR row IN ${this.collection.name} 
+			  ${this.transformQuery(query)}
+			  REMOVE row IN ${this.collection.name}
+			  RETURN OLD._id`, {}, opts);
+
+		const res = await cursor.all();
+		//cursor.delete(); // no 'await' because we don't want to wait for it.
+
+		return res.length;	
 	}
 
 	/**
@@ -297,7 +317,7 @@ class MacroMetaAdapter {
 	 *
 	 * @param {String} _id
 	 * @param {Object?} opts
-	 * @returns {Promise<Object>} Return with the removed document.
+	 * @returns {Promise<Object>} Return with the removed _id & _key.
 	 *
 	 * @memberof MacroMetaAdapter
 	 */
@@ -313,8 +333,25 @@ class MacroMetaAdapter {
 	 *
 	 * @memberof MacroMetaAdapter
 	 */
-	clear(opts) {
-		return this.collection.truncate(opts);
+	async clear(opts) {
+		await this.collection.truncate(opts);
+
+		return 0;
+	}
+
+	/**
+	 * Execute a RAW C8 query.
+	 * @param {String} query 
+	 * @param {Object?} bindArguments 
+	 * @param {Object?} opts 
+	 */
+	async rawQuery(query, bindArguments, opts) {
+		const cursor = await this.fabric.query(query, bindArguments, opts);
+		
+		const res = await cursor.all();
+		//cursor.delete(); // no 'await' because we don't want to wait for it.
+
+		return res;
 	}
 
 	/**
@@ -329,7 +366,7 @@ class MacroMetaAdapter {
 	 *
  	 * @param {Object} params
  	 * @param {Object} opts
-	 * @returns {MongoCursor}
+	 * @returns {ArrayCursor}
 	 */
 	async createCursor(params, opts) {
 		let q = [];
@@ -358,18 +395,13 @@ class MacroMetaAdapter {
 				}
 			} else {
 			*/
+
+			// Filtering
 			if (params.query) {
-				if (_.isObject(params.query)) {
-					Object.keys(params.query).forEach(key => {
-						q.push(`  FILTER row.${key} == ${JSON.stringify(params.query[key])}`);
-					});
-				} else if (_.isString(params.query)) {
-					q.push(`  FILTER ${params.query}`);
-				}
+				q.push(this.transformQuery(params.query));
 			}
 
 			// Sort
-			
 			if (params.sort && q.sort) {
 				let sort = this.transformSort(params.sort);
 				if (sort)
@@ -382,18 +414,32 @@ class MacroMetaAdapter {
 				if (_.isNumber(params.offset) && params.offset > 0)
 					q.push(`  LIMIT ${params.offset}, ${params.limit}`);
 				else
-					q.push(`  LIMIT ${params.limit}`);
+					q.push(`  LIMIT 0, ${params.limit}`);
 			}
 
 			q.push("  RETURN row");
 
 			const qStr = q.join("\n");
-			console.log(qStr);
+			//console.log(qStr);
 			return await this.fabric.query(qStr, {}, opts);
 		}
 
 		// If not params
 		return await this.fabric.query(`FOR row IN ${this.collection.name} RETURN row`, {}, opts);
+	}
+
+	/**
+	 * Transform a query object or string to C8QL filters.
+	 * 
+	 * @param {Object|String} query 
+	 * @returns {String}
+	 */
+	transformQuery(query) {
+		if (_.isObject(query)) {
+			return Object.keys(query).map(key => `  FILTER row.${key} == ${JSON.stringify(query[key])}`).join("\n");
+		} else if (_.isString(query)) {
+			return `  FILTER ${query}`;
+		}
 	}
 
 	/**
