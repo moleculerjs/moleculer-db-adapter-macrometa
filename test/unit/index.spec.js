@@ -3,6 +3,32 @@
 const { ServiceBroker } = require("moleculer");
 const MacroMetaAdapter = require("../../src");
 
+jest.mock("jsc8");
+const FabricClient = require("jsc8");
+
+const mockExists = jest.fn(() => Promise.resolve())
+const mockCreate = jest.fn(() => Promise.resolve())
+
+const mockCollection = jest.fn(() => {
+	return { 
+		exists: mockExists,
+		create: mockCreate
+	}
+})
+const mockDB = {
+	login: jest.fn(() => Promise.resolve()),
+	close: jest.fn(() => Promise.resolve()),
+	useTenant: jest.fn(() => Promise.resolve()),
+	useFabric: jest.fn(() => Promise.resolve()),
+	query: jest.fn(() => Promise.resolve()),
+	// Mock the collection
+	collection: mockCollection
+}
+
+FabricClient.mockImplementation(() => {
+	return mockDB
+})
+
 describe("Test MacroMetaAdapter", () => {
 
 	describe('Test the constructor', () => {
@@ -36,7 +62,7 @@ describe("Test MacroMetaAdapter", () => {
 	describe("Test MacroMetaAdapter's methods", () => {
 		const broker = new ServiceBroker();
 		const service = broker.createService({
-			name: "store",
+			name: "store"
 		});
 
 		const opts = {
@@ -45,8 +71,8 @@ describe("Test MacroMetaAdapter", () => {
 			email: "FABRIC_EMAIL",
 			password: "FABRIC_PASS",
 
-			tenant: null,
-			fabric: null
+			tenant: 'tenantName',
+			fabric: 'fabricName'
 		}
 		const adapter = new MacroMetaAdapter(opts)
 
@@ -74,6 +100,94 @@ describe("Test MacroMetaAdapter", () => {
 			expect(adapter.createCursor).toBeDefined();
 			expect(adapter.transformSort).toBeDefined();
 		});
+
+		describe("Test init", () => {
+			it("should throw an error - no collection name", () => {
+				const service = broker.createService({
+					name: "store"
+				})
+
+				try {
+					adapter.init(broker, service);	
+				} catch (error) {
+					expect(error.message).toBe("Missing `collection` definition in schema of service!")	
+				}
+			});
+
+			it("should throw an error - no email", () => {
+				const service = broker.createService({
+					name: "store",
+					collection: "posts"
+				})
+				const adapter = new MacroMetaAdapter({url: "https://gdn1.macrometa.io"})
+
+				try {
+					adapter.init(broker, service);	
+				} catch (error) {
+					expect(error.message).toBe("The `email` and `password` fields are required to connect with Macrometa Services!")	
+				}
+			});
+
+			it("should throw an error - no password", () => {
+				const service = broker.createService({
+					name: "store",
+					collection: "posts"
+				})
+				const adapter = new MacroMetaAdapter({
+					url: "https://gdn1.macrometa.io",
+					email: "example@example.com"
+				})
+
+				try {
+					adapter.init(broker, service);	
+				} catch (error) {
+					expect(error.message).toBe("The `email` and `password` fields are required to connect with Macrometa Services!")	
+				}
+			});
+		})
+
+		describe("Test connect and disconnect", () => {
+			it("should connect", async () => {
+				expect.assertions(2)
+
+				await adapter.connect()
+
+				expect(adapter.fabric).toBeDefined()
+				expect(adapter.collection).toBeDefined()
+			})
+
+
+			it("should disconnect", async () => {
+				expect.assertions(1)
+
+				await adapter.disconnect()
+
+				expect(adapter.fabric.close).toHaveBeenCalledTimes(1)
+			})
+		})
+
+		it("should throw an error while 'openCollection' - collection doesn't exists", async () => {
+			expect.assertions(1)
+
+			try {
+				await adapter.openCollection('dummy', false)
+			} catch (error) {
+				expect(error.message).toBe(`Collection 'dummy' doesn't exist!`)
+			}
+		})
+
+		it("should successfully 'openCollection'", async () => {
+			mockCollection.mockClear()
+			mockExists.mockClear()
+			
+			expect.assertions(3)
+
+			const collection = await adapter.openCollection('dummy')
+			
+			expect(collection).toBeDefined()
+			expect(adapter.fabric.collection).toHaveBeenCalledTimes(1)
+			expect(mockExists).toHaveBeenCalledTimes(1)
+		})
 	});
 });
 

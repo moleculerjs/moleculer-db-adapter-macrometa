@@ -49,8 +49,11 @@ class MacroMetaAdapter {
 		const schema = this.service.schema;
 
 		if (!schema.collection) {
-			/* istanbul ignore next */
 			throw new ServiceSchemaError("Missing `collection` definition in schema of service!");
+		}
+
+		if (!this.opts.email || !this.opts.password) {
+			throw new MoleculerError("The `email` and `password` fields are required to connect with Macrometa Services!");
 		}
 	}
 
@@ -126,11 +129,11 @@ class MacroMetaAdapter {
 				this.logger.info(`Create '${name}' collection...`);
 				await collection.create();
 			} else {
-				throw new MoleculerError(`Collection '${name}' is not exist!`, 500, "COLLECTION_NOT_EXIST", { name });
+				throw new MoleculerError(`Collection '${name}' doesn't exist!`, 500, "COLLECTION_NOT_EXIST", { name });
 			}
 		}
 
-		this.logger.info(`Collection '${name}' is opened.`);
+		this.logger.info(`Collection '${name}' opened.`);
 
 		return collection;
 	}
