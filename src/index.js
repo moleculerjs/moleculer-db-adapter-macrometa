@@ -125,7 +125,6 @@ class MacroMetaAdapter {
 	 */
 	async openCollection(name, createIfNotExist = true) {
 		this.logger.info(`Open '${name}' collection...`);
-		console.log(this.fabric.collection.getMockImplementation)
 		const collection = this.fabric.collection(name);
 		if (!(await collection.exists())) {
 			if (createIfNotExist) {

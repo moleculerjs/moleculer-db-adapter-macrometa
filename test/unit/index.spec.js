@@ -5,13 +5,11 @@ const MacroMetaAdapter = require("../../src");
 
 jest.mock("jsc8");
 const FabricClient = require("jsc8");
-// jest.mock('jsc8');
 
 const mockExists = jest.fn(() => Promise.resolve());
 const mockCreate = jest.fn(() => Promise.resolve());
 
 const mockCollection = jest.fn(() => {
-	console.log('*********************************************************************')
 	return { 
 		exists: mockExists,
 		create: mockCreate
