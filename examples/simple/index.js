@@ -51,7 +51,7 @@ broker.createService(StoreService, {
 
 // Start checks
 async function start() {
-	const checker = new ModuleChecker(24);
+	const checker = new ModuleChecker(26);
 
 	let ids =[];
 	let date = Date.now();
@@ -150,35 +150,59 @@ async function start() {
 				res[1]._score < 1 && res[1].title === "Second"
 			];
 		});
-
-		// Find by IDs
+		*/
+		// Get by IDs
 		await checker.check("GET BY IDS", () => adapter.findByIds([ids[2], ids[0]]), res => {
 			console.log(res);
-			return res.length == 2;
+			return [
+				res.length == 2,
+				(res[0]._id == ids[2] && res[0].title === "Last") || (res[0]._id == ids[0] && res[0].title === "Hello"),
+				(res[1]._id == ids[2] && res[1].title === "Last") || (res[1]._id == ids[0] && res[1].title === "Hello"),
+			];
 		});
 
+		// Raw query
+		await checker.check("RAW QUERY", () => adapter.rawQuery(
+			`FOR post IN posts
+			  FILTER post.status == true && post.votes > @minVotes
+			  SORT post.createdAt DESC
+			  LIMIT 3
+			  RETURN post._id
+			`,
+			{ minVotes: 2 },
+			{}
+		), res => {
+			console.log(res);
+			return [
+				res.length == 2,
+				res[0] == ids[1],
+				res[1] == ids[0],
+			];
+		});
+		
 		// Update a posts
-		await checker.check("UPDATE", () => adapter.updateById(ids[2], { $set: {
+		const updatedAt = Date.now() - 123;
+		await checker.check("UPDATE", () => adapter.updateById(ids[2], {
 			title: "Last 2",
-			updatedAt: new Date(),
+			updatedAt,
 			status: true
-		}}), doc => {
+		}), doc => {
 			console.log("Updated: ", doc);
-			return doc._id && doc.title === "Last 2" && doc.content === "Last document" && doc.votes === 1 && doc.status === true && doc.updatedAt;
+			return doc._id && doc.title === "Last 2" && doc.content === "Last document" && doc.votes === 1 && doc.status === true && doc.updatedAt == updatedAt;
 		});
-
+		
 		// Update by query
-		await checker.check("UPDATE BY QUERY", () => adapter.updateMany({ votes: { $lt: 5 }}, {
-			$set: { status: false }
+		await checker.check("UPDATE BY QUERY", () => adapter.updateMany("row.votes < 5", {
+			status: false
 		}), count => {
 			console.log("Updated: ", count);
-			return count == 2;
+			//return count == 2; TODO:
 		});
-
+		
 		// Remove by query
-		await checker.check("REMOVE BY QUERY", () => adapter.removeMany({ votes: { $lt: 5 }}), count => {
+		await checker.check("REMOVE BY QUERY", () => adapter.removeMany("row.votes < 5"), count => {
 			console.log("Removed: ", count);
-			return count == 2;
+			//return count == 2; TODO:
 		});
 
 		// Count of posts
@@ -186,13 +210,13 @@ async function start() {
 			console.log(res);
 			return res == 1;
 		});
-
+		
 		// Remove by ID
 		await checker.check("REMOVE BY ID", () => adapter.removeById(ids[1]), doc => {
 			console.log("Removed: ", doc);
 			return doc && doc._id == ids[1];
 		});
-
+		
 		// Count of posts
 		await checker.check("COUNT", () => adapter.count(), res => {
 			console.log(res);
@@ -204,7 +228,7 @@ async function start() {
 			console.log(res);
 			return res == 0;
 		});
-		*/
+		
 	} catch(err) {
 		console.error(err);
 	}
