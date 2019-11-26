@@ -1,7 +1,6 @@
 "use strict";
 
 const { ServiceBroker } = require("moleculer");
-const { MoleculerError } = require("moleculer").Errors;
 const StoreService = require("moleculer-db/index");
 const ModuleChecker = require("../checker");
 const MacroMetaAdapter = require("../../index");
