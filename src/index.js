@@ -312,8 +312,8 @@ class MacroMetaAdapter {
 	 *
 	 * @memberof MacroMetaAdapter
 	 */
-	async removeById(_id, opts) {
-		return await this.collection.remove(_id, opts);
+	removeById(_id, opts) {
+		return this.collection.remove(_id, opts);
 	}
 
 	/**

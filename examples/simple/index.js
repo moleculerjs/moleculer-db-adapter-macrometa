@@ -1,6 +1,7 @@
 "use strict";
 
 const { ServiceBroker } = require("moleculer");
+const { MoleculerError } = require("moleculer").Errors;
 const StoreService = require("moleculer-db/index");
 const ModuleChecker = require("../checker");
 const MacroMetaAdapter = require("../../index");
@@ -33,9 +34,17 @@ broker.createService(StoreService, {
 	settings: {},
 
 	async afterConnected() {
-		adapter = this.adapter;
-		await this.adapter.clear();
-		await this.adapter.collection.createFulltextIndex(["title", "content"]);
+		try {
+			adapter = this.adapter;
+			await this.adapter.clear();
+			// Currently only supports one elem. More info: https://dev.macrometa.io/docs/indexes-1#collectioncreatefulltextindex
+			// Throws an error if 2 elems.
+			// await this.adapter.collection.createFulltextIndex(["title", "content"]);
+			await this.adapter.collection.createFulltextIndex(["title"]);
+		} catch (error) {
+			this.broker.logger.error('An error ocurred in afterConnected() method')
+			throw error
+		}
 	}
 });
 
@@ -77,7 +86,7 @@ checker.add("FIND", () => adapter.find(), res => {
 });
 
 // Find by ID
-checker.add("GET", () => adapter.findById(ids[0]), res => {
+checker.add("GET BY ID", () => adapter.findById(ids[0]), res => {
 	console.log(res);
 	return res._id == ids[0];
 });
@@ -109,6 +118,19 @@ checker.add("COUNT", () => adapter.count(), res => {
 	console.log(res);
 	return res == 3;
 });
+
+// Remove by ID
+checker.add("REMOVE BY ID", () => adapter.removeById(ids[0]), res => {
+	console.log("Removed: ", res);
+	return res._id == ids[0];
+});
+
+// Count of posts
+checker.add("COUNT", () => adapter.count(), res => {
+	console.log(res);
+	return res == 2;
+});
+
 /*
 // Find
 checker.add("FIND by query", () => adapter.find({ query: { title: "Last" } }), res => {
