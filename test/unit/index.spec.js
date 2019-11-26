@@ -5,11 +5,13 @@ const MacroMetaAdapter = require("../../src");
 
 jest.mock("jsc8");
 const FabricClient = require("jsc8");
+// jest.mock('jsc8');
 
 const mockExists = jest.fn(() => Promise.resolve());
 const mockCreate = jest.fn(() => Promise.resolve());
 
 const mockCollection = jest.fn(() => {
+	console.log('*********************************************************************')
 	return { 
 		exists: mockExists,
 		create: mockCreate
@@ -22,59 +24,65 @@ const mockDB = {
 	useFabric: jest.fn(() => Promise.resolve()),
 	query: jest.fn(() => Promise.resolve()),
 	// Mock the collection
-	collection: mockCollection
+	collection: jest.fn(() => {
+		return {
+			exists: jest.fn(() => Promise.resolve())
+		}
+	}),
 };
 
-FabricClient.mockImplementation(() => {
-	return mockDB;
-});
+FabricClient.mockImplementation(() =>  mockDB);
 
 describe("Test MacroMetaAdapter", () => {
 
 	describe("Test the constructor", () => {
 		it("should be created with a String", () => {
 			const adapter = new MacroMetaAdapter("MY-C8-URL");
-			expect(adapter.opts.url).toBe("MY-C8-URL");
+			expect(adapter.opts.config).toBe("MY-C8-URL");
 		});
 
 		it("should be created with a Array of string", () => {
 			const adapter = new MacroMetaAdapter(["MY-C8-URL1", "MY-C8-URL2"]);
-			expect(adapter.opts.url).toEqual(["MY-C8-URL1", "MY-C8-URL2"]);
+			expect(adapter.opts.config).toEqual(["MY-C8-URL1", "MY-C8-URL2"]);
 		});
 
 		it("should be created with an Object", () => {
 			const adapter = new MacroMetaAdapter({
-				url: "https://gdn1.macrometa.io",
-				email: "FABRIC_EMAIL",
-				password: "FABRIC_PASS",
+				config: "https://gdn1.macrometa.io",
+				auth: {
+					email: "FABRIC_EMAIL",
+					password: "FABRIC_PASS",
+				}
 			});
-			expect(adapter.opts.url).toEqual("https://gdn1.macrometa.io");
-			expect(adapter.opts.email).toEqual("FABRIC_EMAIL");
-			expect(adapter.opts.password).toEqual("FABRIC_PASS");
+			expect(adapter.opts.config).toEqual("https://gdn1.macrometa.io");
+			expect(adapter.opts.auth.email).toEqual("FABRIC_EMAIL");
+			expect(adapter.opts.auth.password).toEqual("FABRIC_PASS");
 		});
 
 		it("should be created without params", () => {
 			const adapter = new MacroMetaAdapter();
-			expect(adapter.opts).toEqual({});
+			expect(adapter.opts).toEqual({auth:{}});
 		});
 	});
-
+	
 	describe("Test MacroMetaAdapter's methods", () => {
 		const broker = new ServiceBroker();
 		const service = broker.createService({
-			name: "store"
+			name: "store",
+			collection: "posts"
 		});
 
-		const opts = {
-			url: "https://gdn1.macrometa.io",
-
-			email: "FABRIC_EMAIL",
-			password: "FABRIC_PASS",
-
+		const adapter = new MacroMetaAdapter({
+			config: "https://gdn1.macrometa.io",
+	
+			auth: {
+				email: "FABRIC_EMAIL",
+				password: "FABRIC_PASS"
+			},
+	
 			tenant: "tenantName",
 			fabric: "fabricName"
-		};
-		const adapter = new MacroMetaAdapter(opts);
+		});
 
 		beforeAll(() => broker.start());
 		afterAll(() => broker.stop());
@@ -103,52 +111,55 @@ describe("Test MacroMetaAdapter", () => {
 
 		describe("Test init", () => {
 			it("should throw an error - no collection name", () => {
-				const service = broker.createService({
-					name: "store"
+				const svc = broker.createService({
+					name: "store",
 				});
 
 				try {
-					adapter.init(broker, service);	
+					adapter.init(broker, svc);	
 				} catch (error) {
 					expect(error.message).toBe("Missing `collection` definition in schema of service!");	
 				}
 			});
-
+			
 			it("should throw an error - no email", () => {
-				const service = broker.createService({
+				const svc = broker.createService({
 					name: "store",
 					collection: "posts"
 				});
-				const adapter = new MacroMetaAdapter({url: "https://gdn1.macrometa.io"});
+				const adapter = new MacroMetaAdapter({config: "https://gdn1.macrometa.io"});
 
 				try {
-					adapter.init(broker, service);	
+					adapter.init(broker, svc);	
 				} catch (error) {
 					expect(error.message).toBe("The `email` and `password` fields are required to connect with Macrometa Services!");	
 				}
 			});
 
 			it("should throw an error - no password", () => {
-				const service = broker.createService({
+				const svc = broker.createService({
 					name: "store",
 					collection: "posts"
 				});
 				const adapter = new MacroMetaAdapter({
-					url: "https://gdn1.macrometa.io",
-					email: "example@example.com"
+					config: "https://gdn1.macrometa.io",
+					auth: { email: "example@example.com" }
 				});
 
 				try {
-					adapter.init(broker, service);	
+					adapter.init(broker, svc);	
 				} catch (error) {
 					expect(error.message).toBe("The `email` and `password` fields are required to connect with Macrometa Services!");	
 				}
 			});
 		});
 
+		
 		describe("Test connect and disconnect", () => {
 			it("should connect", async () => {
 				expect.assertions(2);
+
+				adapter.init(broker, service);	
 
 				await adapter.connect();
 
@@ -156,19 +167,19 @@ describe("Test MacroMetaAdapter", () => {
 				expect(adapter.collection).toBeDefined();
 			});
 
-
 			it("should disconnect", async () => {
 				expect.assertions(1);
 
 				await adapter.disconnect();
 
 				expect(adapter.fabric.close).toHaveBeenCalledTimes(1);
-			});
+			});			
 		});
 
+		
 		it("should throw an error while 'openCollection' - collection doesn't exists", async () => {
 			expect.assertions(1);
-
+			adapter.init(broker, service)
 			try {
 				await adapter.openCollection("dummy", false);
 			} catch (error) {
@@ -177,6 +188,8 @@ describe("Test MacroMetaAdapter", () => {
 		});
 
 		it("should successfully 'openCollection'", async () => {
+			adapter.init(broker, service)
+			
 			mockCollection.mockClear();
 			mockExists.mockClear();
 			
@@ -188,6 +201,7 @@ describe("Test MacroMetaAdapter", () => {
 			expect(adapter.fabric.collection).toHaveBeenCalledTimes(1);
 			expect(mockExists).toHaveBeenCalledTimes(1);
 		});
+		
 	});
 });
 
