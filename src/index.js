@@ -26,7 +26,9 @@ class MacroMetaAdapter {
 		if (_.isString(opts) || Array.isArray(opts))
 			this.opts = { url: opts };
 		else 
-			this.opts = opts || {};
+			this.opts = _.defaultsDeep({
+				auth: {}
+			}, opts);
 	}
 
 	/**
@@ -58,9 +60,9 @@ class MacroMetaAdapter {
 	 * @memberof MacroMetaAdapter
 	 */
 	async connect() {
-		this.fabric = new Fabric(this.opts.url);
+		this.fabric = new Fabric(this.opts.config);
 
-		await this.login(this.opts.email, this.opts.password);
+		await this.login(this.opts.auth.email, this.opts.auth.password);
 
 		this.collection = await this.openCollection(this.service.schema.collection);
 		this.logger.info("Fabric c8 connection has been established.");

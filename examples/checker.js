@@ -7,33 +7,31 @@
 "use strict";
 
 const _ = require("lodash");
-const Promise = require("bluebird");
 const kleur = require("kleur");
 
 class ModuleChecker {
 
 	constructor(okCount) {
-		this.tests = [];
 		this.okCount = okCount;
 		this.ok = 0;
 		this.fail = 0;
 	}
 
-	add(title, fn, cb) {
-		this.tests.push(() => Promise.resolve(this.printTitle(title)).then(() => fn()).then(rsp => {
+	async check(title, fn, cb) {
+		this.printTitle(title);
+		try {
+			const rsp = await fn();
 			let res = cb(rsp);
 			if (Array.isArray(res))
 				res.map(r => this.checkValid(r));
 			else if (res != null)
 				this.checkValid(res);
-		}).catch(err => {
+
+		} catch(err) {
 			console.error(kleur.red().bold(err.name, err.message));
 			console.error(err);
-		}));
-	}
-
-	execute() {
-		return Promise.each(this.tests, fn => fn());
+			this.fail++;
+		}
 	}
 
 	printTitle(text) {
@@ -56,8 +54,13 @@ class ModuleChecker {
 	}
 
 	printTotal() {
+		const failed = this.fail > 0 || this.ok < this.okCount;
 		console.log();
-		console.log(kleur.bgGreen().yellow().bold(`--- OK: ${this.ok} of ${this.okCount} ---`), this.fail > 0 ? " | " + kleur.bgRed().yellow().bold(`!!! FAIL: ${this.fail} !!!`) : "");
+		if (!failed)
+			console.log(kleur.bgGreen().yellow().bold(`--- OK: ${this.ok} of ${this.okCount} ---`));
+		else
+			console.log(kleur.bgRed().yellow().bold(`--- OK: ${this.ok} of ${this.okCount} --- FAILED!`));
+
 		console.log();
 	}
 }
