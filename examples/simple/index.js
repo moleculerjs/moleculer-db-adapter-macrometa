@@ -41,8 +41,8 @@ broker.createService(StoreService, {
 			// await this.adapter.collection.createFulltextIndex(["title", "content"]);
 			await this.adapter.collection.createFulltextIndex(["title"]);
 		} catch (error) {
-			this.broker.logger.error('An error ocurred in afterConnected() method')
-			throw error
+			this.broker.logger.error("An error ocurred in afterConnected() method");
+			throw error;
 		}
 	}
 });
