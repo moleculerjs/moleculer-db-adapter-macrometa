@@ -10,8 +10,12 @@ const _ 			= require("lodash");
 const Promise		= require("bluebird");
 const { ServiceSchemaError, MoleculerError } = require("moleculer").Errors;
 
-const Fabric = require("jsc8");
-const c8ql = Fabric.c8ql;
+const FabricClient = require("jsc8");
+const c8ql = FabricClient.c8ql;
+
+// Imports to add some IntelliSense
+const { Service, ServiceBroker } = require("moleculer");
+const { DocumentCollection, Fabric } = require("jsc8");
 
 class MacroMetaAdapter {
 
@@ -58,10 +62,16 @@ class MacroMetaAdapter {
 	 * @memberof MacroMetaAdapter
 	 */
 	async connect() {
-		this.fabric = new Fabric(this.opts.url);
+		/**
+		 * @type {Fabric}
+		 */
+		this.fabric = new FabricClient(this.opts.url);
 
 		await this.login(this.opts.email, this.opts.password);
 
+		/**
+		 * @type {DocumentCollection}
+		 */
 		this.collection = await this.openCollection(this.service.schema.collection);
 		this.logger.info("Fabric c8 connection has been established.");
 	}
@@ -93,12 +103,12 @@ class MacroMetaAdapter {
 
 		if (this.opts.tenant) {
 			this.logger.info(`Switch tenant to '${this.opts.tenant}'`);
-			await this.fabric.useTenant(this.opts.tenant);
+			this.fabric.useTenant(this.opts.tenant);
 		}
 
 		if (this.opts.fabric) {
 			this.logger.info(`Switch Fabric to '${this.opts.fabric}'`);
-			await this.fabric.usefabric(this.opts.fabric);
+			this.fabric.useFabric(this.opts.fabric);
 		}
 	}
 
@@ -201,7 +211,7 @@ class MacroMetaAdapter {
 	}
 
 	/**
-	 * Get count of filtered entites.
+	 * Get count of filtered entities.
 	 *
 	 * Available query props:
 	 *  - search

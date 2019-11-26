@@ -11,6 +11,9 @@ const broker = new ServiceBroker({
 	logger: true,
 	logLevel: "debug"
 });
+/**
+ * @type {MacroMetaAdapter}
+ */
 let adapter;
 
 // Load my service
