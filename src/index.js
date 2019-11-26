@@ -332,11 +332,11 @@ class MacroMetaAdapter {
 	 * @returns {MongoCursor}
 	 */
 	async createCursor(params, opts) {
-		let q;
+		let q = [];
 		if (params) {
-			// TODO: not implemented
-			throw new Error("not implemented");
-
+			q.push(`FOR row IN ${this.collection.name}`);
+			
+			/*
 			// Full-text search
 			// More info: https://docs.mongodb.com/manual/reference/operator/query/text/
 			if (_.isString(params.search) && params.search !== "") {
@@ -357,25 +357,39 @@ class MacroMetaAdapter {
 					});
 				}
 			} else {
-				q = fn.call(this.collection, params.query);
-
-				// Sort
-				if (params.sort && q.sort) {
-					let sort = this.transformSort(params.sort);
-					if (sort)
-						q.sort(sort);
+			*/
+			if (params.query) {
+				if (_.isObject(params.query)) {
+					Object.keys(params.query).forEach(key => {
+						q.push(`  FILTER row.${key} == ${JSON.stringify(params.query[key])}`);
+					});
+				} else if (_.isString(params.query)) {
+					q.push(`  FILTER ${params.query}`);
 				}
 			}
 
-			// Offset
-			if (_.isNumber(params.offset) && params.offset > 0)
-				q.skip(params.offset);
+			// Sort
+			
+			if (params.sort && q.sort) {
+				let sort = this.transformSort(params.sort);
+				if (sort)
+					q.push(`  SORT ${sort}`);
+			}
 
 			// Limit
-			if (_.isNumber(params.limit) && params.limit > 0)
-				q.limit(params.limit);
+			if (_.isNumber(params.limit) && params.limit > 0) {
+				// Offset
+				if (_.isNumber(params.offset) && params.offset > 0)
+					q.push(`  LIMIT ${params.offset}, ${params.limit}`);
+				else
+					q.push(`  LIMIT ${params.limit}`);
+			}
 
-			return q;
+			q.push("  RETURN row");
+
+			const qStr = q.join("\n");
+			console.log(qStr);
+			return await this.fabric.query(qStr, {}, opts);
 		}
 
 		// If not params
@@ -395,17 +409,15 @@ class MacroMetaAdapter {
 			sort = sort.replace(/,/, " ").split(" ");
 
 		if (Array.isArray(sort)) {
-			let sortObj = {};
-			sort.forEach(s => {
+			return sort.map(s => {
 				if (s.startsWith("-"))
-					sortObj[s.slice(1)] = -1;
+					return `row.${s.slice(1)} DESC`;
 				else
-					sortObj[s] = 1;
-			});
-			return sortObj;
+					return `row.${s}`;
+			}).join(", ");
 		}
 
-		return sort;
+		return null;
 	}
 
 }

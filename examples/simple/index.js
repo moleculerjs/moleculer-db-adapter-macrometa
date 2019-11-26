@@ -100,31 +100,36 @@ async function start() {
 			console.log(res);
 			return res == 3;
 		});
-		/*
-		// Find
+		
+		// Find by title
 		await checker.check("FIND by query", () => adapter.find({ query: { title: "Last" } }), res => {
 			console.log(res);
 			return res.length == 1 && res[0]._id == ids[2];
 		});
-
-		// Find
+		
+		// Find with limit, sort, offset
 		await checker.check("FIND by limit, sort, query", () => adapter.find({ limit: 1, sort: ["votes", "-title"], offset: 1 }), res => {
 			console.log(res);
 			return res.length == 1 && res[0]._id == ids[0];
 		});
 
+		
 		// Find
-		await checker.check("FIND by query ($gt)", () => adapter.find({ query: { votes: { $gt: 2 } } }), res => {
+		await checker.check("FIND by query ($gt)", () => adapter.find({ query: "row.votes > 2", sort: "-votes" }), res => {
 			console.log(res);
-			return res.length == 2;
+			return [
+				res.length == 2,
+				res[0].title == "Second" && res[0].votes == 8,
+				res[1].title == "Hello" && res[1].votes == 3,
+			];
 		});
-
-		// Find
-		await checker.check("COUNT by query ($gt)", () => adapter.count({ query: { votes: { $gt: 2 } } }), res => {
+		
+		// Count by query
+		await checker.check("COUNT by query ($gt)", () => adapter.count({ query: "row.votes > 2" }), res => {
 			console.log(res);
 			return res == 2;
 		});
-
+		/*
 		// Find
 		await checker.check("FIND by text search", () => adapter.find({ search: "content" }), res => {
 			console.log(res);
