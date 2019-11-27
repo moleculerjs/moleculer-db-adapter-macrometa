@@ -51,7 +51,6 @@ class MacroMetaAdapter {
 		const schema = this.service.schema;
 
 		if (!schema.collection) {
-			/* istanbul ignore next */
 			throw new ServiceSchemaError("Missing `collection` definition in schema of service!");
 		}
 
@@ -136,7 +135,7 @@ class MacroMetaAdapter {
 			}
 		}
 
-		this.logger.info(`Collection '${name}' is opened.`);
+		this.logger.info(`Collection '${name}' opened.`);
 
 		return collection;
 	}
@@ -260,9 +259,15 @@ class MacroMetaAdapter {
 	 *
 	 * @memberof MacroMetaAdapter
 	 */
-	insertMany(entities, opts) {
+	async insertMany(entities, opts) {
 		// TODO: is there bulk insert method?
-		return Promise.all(entities.map(entity => this.insert(entity, opts)));
+		// return Promise.all(entities.map(entity => this.insert(entity, opts)));
+		const cursor = await this.fabric.query(`
+							FOR entity IN ${JSON.stringify(entities)}
+							INSERT entity INTO ${this.collection.name}
+							RETURN NEW`, {}, opts)
+
+		return await cursor.all()
 	}
 
 	/**
@@ -335,8 +340,8 @@ class MacroMetaAdapter {
 	 *
 	 * @memberof MacroMetaAdapter
 	 */
-	async removeById(_id, opts) {
-		return await this.collection.remove(_id, opts);
+	removeById(_id, opts) {
+		return this.collection.remove(_id, opts);
 	}
 
 	/**
@@ -348,7 +353,7 @@ class MacroMetaAdapter {
 	 * @memberof MacroMetaAdapter
 	 */
 	async clear(opts) {
-		await this.collection.truncate(opts);
+		await this.collection.truncate();
 
 		return 0;
 	}
@@ -380,13 +385,29 @@ class MacroMetaAdapter {
 	 *
  	 * @param {Object} params
  	 * @param {Object} opts
-	 * @returns {ArrayCursor}
 	 */
 	async createCursor(params, opts) {
 		let q = [];
 		if (params) {
 			q.push(`FOR row IN ${this.collection.name}`);
 			
+			// Use `LIKE` operator for text search
+			// More info: https://dev.macrometa.io/docs/operators#comparison-operators
+				// Example:
+				// FOR doc IN @@collection
+				// FILTER doc.content LIKE "%content%" OR doc.content LIKE "%Last%"
+				// RETURN doc
+			if (_.isString(params.search) && params.search !== "") {
+				let fields = []
+				if (params.searchFields) {
+					fields = _.isString(params.searchFields) ? params.searchFields.split(" ") : params.searchFields;
+				}
+				let filters = fields.map(field => `row.${field} LIKE "${params.search}"`).join(' OR ')
+
+				// console.log(filters)
+				q.push(`  FILTER ${filters}`)
+			}
+
 			/*
 			// Full-text search
 			// More info: https://docs.mongodb.com/manual/reference/operator/query/text/

@@ -24,7 +24,7 @@ broker.createService(StoreService, {
 
 		auth: {
 			email: process.env.FABRIC_EMAIL,
-			password: process.env.FABRIC_PASS,
+			password: process.env.FABRIC_PASS
 		},
 
 		tenant: null,
@@ -41,7 +41,8 @@ broker.createService(StoreService, {
 			// Currently only supports one elem. More info: https://dev.macrometa.io/docs/indexes-1#collectioncreatefulltextindex
 			// Throws an error if 2 elems.
 			// await this.adapter.collection.createFulltextIndex(["title", "content"]);
-			await this.adapter.collection.createFulltextIndex(["title"]);
+			// Something isn't right. This breaks queries and requests
+			// await this.adapter.collection.createFulltextIndex(["title"]);
 		} catch (error) {
 			this.broker.logger.error("An error ocurred in afterConnected() method");
 			throw error;
@@ -140,17 +141,17 @@ async function start() {
 			console.log(res);
 			return res == 2;
 		});
-		/*
+		
 		// Find
-		await checker.check("FIND by text search", () => adapter.find({ search: "content" }), res => {
+		await checker.check("FIND by text search", () => adapter.find({ search: "%content%", searchFields: ["content"] }), res => {
 			console.log(res);
 			return [
 				res.length == 2,
-				res[0]._score < 1 && res[0].title === "Hello",
-				res[1]._score < 1 && res[1].title === "Second"
+				(res[0].votes === 3 && res[0].title === "Hello")  || (res[1].votes === 3 && res[1].title === "Hello"),
+				(res[0].votes === 8 && res[0].title === "Second") || (res[1].votes === 8 && res[1].title === "Second")
 			];
 		});
-		*/
+
 		// Get by IDs
 		await checker.check("GET BY IDS", () => adapter.findByIds([ids[2], ids[0]]), res => {
 			console.log(res);
