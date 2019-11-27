@@ -59,8 +59,8 @@ async function start() {
 	const changes = [];
 
 	await Promise.delay(1000);
-	try {
 
+	try {
 		// List collections
 		await checker.check("LIST COLLECTIONS", () => adapter.listCollections(), res => {
 			console.log(res);
@@ -168,6 +168,17 @@ async function start() {
 			];
 		});
 
+		// Save a query
+		const res = await adapter.saveQuery("mostVoted", "FOR p IN posts FILTER p.votes > @minVotes SORT p.votes DESC");
+		console.log(res);
+
+		/* Execute a saved query TODO: not working
+		await checker.check("EXECUTE mostVoted", () => adapter.executeSavedQuery("mostVoted", { minVotes: 2 }), res => {
+			console.log(res);
+			return res.length == 2;
+		});
+		*/
+
 		// Get by IDs
 		await checker.check("GET BY IDS", () => adapter.findByIds([ids[2], ids[0]]), res => {
 			console.log(res);
@@ -264,7 +275,7 @@ async function start() {
 				changes[8]._delete === true && changes[8]._key == keys[1],
 			];
 		});
-
+		
 	} catch(err) {
 		console.error(err);
 	}

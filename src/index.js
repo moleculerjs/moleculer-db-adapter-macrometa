@@ -387,13 +387,39 @@ class MacroMetaAdapter {
 		return res;
 	}
 
+	/**
+	 * Save a named RSETQL query.
+	 * @param {String} name 
+	 * @param {String} query 
+	 * @param {Object} parameter 
+	 */
+	saveQuery(name, query, parameter = {}) {
+		return this.fabric.saveQuery(name, parameter, query);
+	}
+
+	/**
+	 * Execute a named RESTQL query.
+	 * @param {String} name 
+	 * @param {Object?} variables 
+	 */
+	executeSavedQuery(name, variables) {
+		return this.fabric.executeSavedQuery(name, variables);
+	}
+
+	/**
+	 * Subscribe to collection changes.
+	 * @param {Function} cb 
+	 * @param {String?} subscriptionName 
+	 */
 	subscribeToChanges(cb, subscriptionName) {
 		const dcName = Array.isArray(this.opts.config)
 			? this.opts.config[0]
 			: this.opts.config;
 
 		this.collection.onChange({
-			onmessage(msg) {
+			onopen: () => this.logger.debug("Collection changing subscription opened."),
+			onclose: () => this.logger.debug("Collection changing subscription closed."),
+			onmessage: (msg) => {
 				try {
 					const d = JSON.parse(msg);
 					if (d.payload != "") {
@@ -405,9 +431,7 @@ class MacroMetaAdapter {
 					cb(err, msg);	
 				}
 			},
-			onerror(err) {
-				cb(err);
-			}
+			onerror: (err) => cb(err)
 		}, dcName.split("://")[1], subscriptionName);
 	}
 
