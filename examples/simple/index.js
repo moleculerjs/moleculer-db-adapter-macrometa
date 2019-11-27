@@ -68,7 +68,7 @@ async function start() {
 		});
 
 		// Subscribe to changes
-		adapter.subscribeToChanges((err, msg) => {
+		await adapter.subscribeToChanges((err, msg) => {
 			if (err)
 				return console.error(err, msg);
 

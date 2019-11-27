@@ -410,29 +410,49 @@ class MacroMetaAdapter {
 	 * Subscribe to collection changes.
 	 * @param {Function} cb 
 	 * @param {String?} subscriptionName 
+	 * @returns {Promise}
 	 */
 	subscribeToChanges(cb, subscriptionName) {
-		const dcName = Array.isArray(this.opts.config)
-			? this.opts.config[0]
-			: this.opts.config;
+		return new Promise((resolve, reject) => {
+			let isConnected = false;
+			const dcName = Array.isArray(this.opts.config)
+				? this.opts.config[0]
+				: this.opts.config;
 
-		this.collection.onChange({
-			onopen: () => this.logger.debug("Collection changing subscription opened."),
-			onclose: () => this.logger.debug("Collection changing subscription closed."),
-			onmessage: (msg) => {
-				try {
-					const d = JSON.parse(msg);
-					if (d.payload != "") {
-						const payload = Buffer.from(d.payload, "base64");
-						d.payload = JSON.parse(payload.toString());
-						cb(null, d);
+			this.collection.onChange({
+				onopen: () => {
+					isConnected = true;
+					this.logger.debug("Collection changing subscription opened.");
+					resolve();
+				},
+				onclose: () => this.logger.debug("Collection changing subscription closed."),
+				onmessage: (msg) => {
+					try {
+						const d = JSON.parse(msg);
+						if (d.payload != "") {
+							const payload = Buffer.from(d.payload, "base64");
+							d.payload = JSON.parse(payload.toString());
+							cb(null, d);
+						}
+					} catch(err) {
+						cb(err, msg);	
 					}
-				} catch(err) {
-					cb(err, msg);	
+				},
+				onerror: (err) => {
+					if (!isConnected)
+						reject(err);
+					else
+						cb(err);
 				}
-			},
-			onerror: (err) => cb(err)
-		}, dcName.split("://")[1], subscriptionName);
+			}, dcName.split("://")[1], subscriptionName);
+		});
+	}
+
+	/**
+	 * Unsubscribe from collection changes.
+	 */
+	unsubscribeFromChanges() {
+		this.collection.closeOnChangeConnection();
 	}
 
 	/**
