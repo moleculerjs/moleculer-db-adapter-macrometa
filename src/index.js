@@ -24,7 +24,7 @@ class MacroMetaAdapter {
 	 */
 	constructor(opts) {
 		if (_.isString(opts) || Array.isArray(opts))
-			this.opts = { url: opts };
+			this.opts = { config: opts };
 		else 
 			this.opts = _.defaultsDeep({
 				auth: {}
@@ -100,7 +100,7 @@ class MacroMetaAdapter {
 
 		if (this.opts.fabric) {
 			this.logger.info(`Switch Fabric to '${this.opts.fabric}'`);
-			await this.fabric.usefabric(this.opts.fabric);
+			await this.fabric.useFabric(this.opts.fabric);
 		}
 	}
 
@@ -118,7 +118,7 @@ class MacroMetaAdapter {
 				this.logger.info(`Create '${name}' collection...`);
 				await collection.create();
 			} else {
-				throw new MoleculerError(`Collection '${name}' is not exist!`, 500, "COLLECTION_NOT_EXIST", { name });
+				throw new MoleculerError(`Collection '${name}' doesn't exist!`, 500, "COLLECTION_NOT_EXIST", { name });
 			}
 		}
 
