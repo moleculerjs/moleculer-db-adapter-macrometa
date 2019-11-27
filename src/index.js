@@ -10,8 +10,12 @@ const _ 			= require("lodash");
 const Promise		= require("bluebird");
 const { ServiceSchemaError, MoleculerError } = require("moleculer").Errors;
 
-const Fabric = require("jsc8");
-const c8ql = Fabric.c8ql;
+const FabricClient = require("jsc8");
+const c8ql = FabricClient.c8ql;
+
+// Imports to add some IntelliSense
+const { Service, ServiceBroker } = require("moleculer");
+const { DocumentCollection, Fabric } = require("jsc8");
 
 class MacroMetaAdapter {
 
@@ -50,6 +54,10 @@ class MacroMetaAdapter {
 			/* istanbul ignore next */
 			throw new ServiceSchemaError("Missing `collection` definition in schema of service!");
 		}
+
+		if (!this.opts.auth.email || !this.opts.auth.password) {
+			throw new MoleculerError("The `email` and `password` fields are required to connect to Macrometa!");
+		}
 	}
 
 	/**
@@ -60,10 +68,16 @@ class MacroMetaAdapter {
 	 * @memberof MacroMetaAdapter
 	 */
 	async connect() {
-		this.fabric = new Fabric(this.opts.config);
+		/**
+		 * @type {Fabric}
+		 */
+		this.fabric = new FabricClient(this.opts.config);
 
 		await this.login(this.opts.auth.email, this.opts.auth.password);
 
+		/**
+		 * @type {DocumentCollection}
+		 */
 		this.collection = await this.openCollection(this.service.schema.collection);
 		this.logger.info("Fabric c8 connection has been established.");
 	}

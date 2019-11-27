@@ -127,7 +127,7 @@ describe("Test MacroMetaAdapter", () => {
 				try {
 					adapter.init(broker, svc);	
 				} catch (error) {
-					expect(error.message).toBe("The `email` and `password` fields are required to connect with Macrometa Services!");	
+					expect(error.message).toBe("The `email` and `password` fields are required to connect to Macrometa!");	
 				}
 			});
 
@@ -144,7 +144,7 @@ describe("Test MacroMetaAdapter", () => {
 				try {
 					adapter.init(broker, svc);	
 				} catch (error) {
-					expect(error.message).toBe("The `email` and `password` fields are required to connect with Macrometa Services!");	
+					expect(error.message).toBe("The `email` and `password` fields are required to connect to Macrometa!");	
 				}
 			});
 		});
