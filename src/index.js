@@ -15,7 +15,7 @@ const c8ql = FabricClient.c8ql;
 
 // Imports to add some IntelliSense
 const { Service, ServiceBroker } = require("moleculer");
-const { DocumentCollection, Fabric } = require("jsc8");
+const { DocumentCollection, Fabric, ArrayCursor } = require("jsc8");
 
 class MacroMetaAdapter {
 
@@ -79,6 +79,10 @@ class MacroMetaAdapter {
 		 */
 		this.collection = await this.openCollection(this.service.schema.collection);
 		this.logger.info("Fabric c8 connection has been established.");
+
+		// Create shortcuts in service instance.
+		this.service.collection = this.collection;
+		this.service.fabric = this.fabric;
 	}
 
 	/**
@@ -138,6 +142,14 @@ class MacroMetaAdapter {
 		this.logger.info(`Collection '${name}' opened.`);
 
 		return collection;
+	}
+
+	/**
+	 * List all collections.
+	 * @param {Boolean} excludeSystem 
+	 */
+	listCollections(excludeSystem = true) {
+		return this.fabric.listCollections(excludeSystem);
 	}
 
 	/**
@@ -263,11 +275,14 @@ class MacroMetaAdapter {
 		// TODO: is there bulk insert method?
 		// return Promise.all(entities.map(entity => this.insert(entity, opts)));
 		const cursor = await this.fabric.query(`
-							FOR entity IN ${JSON.stringify(entities)}
-							INSERT entity INTO ${this.collection.name}
-							RETURN NEW`, {}, opts)
+			FOR entity IN ${JSON.stringify(entities)}
+				INSERT entity INTO ${this.collection.name}
+				RETURN NEW`, {}, opts);
 
-		return await cursor.all()
+		const res = await cursor.all();
+		//cursor.delete(); // no 'await' because we don't want to wait for it.
+
+		return res;
 	}
 
 	/**
@@ -345,14 +360,13 @@ class MacroMetaAdapter {
 	}
 
 	/**
-	 * Clear all entities from collection
+	 * Clear all entities from collection.
 	 *
-	 * @param {Object?} opts
 	 * @returns {Promise}
 	 *
 	 * @memberof MacroMetaAdapter
 	 */
-	async clear(opts) {
+	async clear() {
 		await this.collection.truncate();
 
 		return 0;
@@ -373,6 +387,30 @@ class MacroMetaAdapter {
 		return res;
 	}
 
+	subscribeToChanges(cb, subscriptionName) {
+		const dcName = Array.isArray(this.opts.config)
+			? this.opts.config[0]
+			: this.opts.config;
+
+		this.collection.onChange({
+			onmessage(msg) {
+				try {
+					const d = JSON.parse(msg);
+					if (d.payload != "") {
+						const payload = Buffer.from(d.payload, "base64");
+						d.payload = JSON.parse(payload.toString());
+						cb(null, d);
+					}
+				} catch(err) {
+					cb(err, msg);	
+				}
+			},
+			onerror(err) {
+				cb(err);
+			}
+		}, dcName.split("://")[1], subscriptionName);
+	}
+
 	/**
 	 * Create a filtered cursor.
 	 *
@@ -385,6 +423,7 @@ class MacroMetaAdapter {
 	 *
  	 * @param {Object} params
  	 * @param {Object} opts
+	 * @returns {ArrayCursor}
 	 */
 	async createCursor(params, opts) {
 		let q = [];
@@ -393,19 +432,19 @@ class MacroMetaAdapter {
 			
 			// Use `LIKE` operator for text search
 			// More info: https://dev.macrometa.io/docs/operators#comparison-operators
-				// Example:
-				// FOR doc IN @@collection
-				// FILTER doc.content LIKE "%content%" OR doc.content LIKE "%Last%"
-				// RETURN doc
+			// Example:
+			// FOR doc IN @@collection
+			// FILTER doc.content LIKE "%content%" OR doc.content LIKE "%Last%"
+			// RETURN doc
 			if (_.isString(params.search) && params.search !== "") {
-				let fields = []
+				let fields = [];
 				if (params.searchFields) {
 					fields = _.isString(params.searchFields) ? params.searchFields.split(" ") : params.searchFields;
 				}
-				let filters = fields.map(field => `row.${field} LIKE "${params.search}"`).join(' OR ')
+				let filters = fields.map(field => `row.${field} LIKE "${params.search}"`).join(" OR ");
 
 				// console.log(filters)
-				q.push(`  FILTER ${filters}`)
+				q.push(`  FILTER ${filters}`);
 			}
 
 			/*

@@ -1,13 +1,13 @@
 "use strict";
 
-let { ServiceBroker } = require("moleculer");
-let StoreService = require("../../../moleculer-db/index");
-let MongoAdapter = require("../../index");
-let ModuleChecker = require("../../../moleculer-db/test/checker");
-let Promise = require("bluebird");
+const { ServiceBroker } = require("moleculer");
+const StoreService = require("../../../moleculer-db/index");
+const MongoAdapter = require("../../index");
+const ModuleChecker = require("../../../moleculer-db/test/checker");
+const Promise = require("bluebird");
 
 // Create broker
-let broker = new ServiceBroker({
+const broker = new ServiceBroker({
 	logger: console,
 	logLevel: "debug"
 });

@@ -52,13 +52,29 @@ broker.createService(StoreService, {
 
 // Start checks
 async function start() {
-	const checker = new ModuleChecker(26);
+	const checker = new ModuleChecker(42);
 
-	let ids =[];
-	let date = Date.now();
+	const ids =[];
+	const date = Date.now();
+	const changes = [];
 
-	await Promise.delay(500);
+	await Promise.delay(1000);
 	try {
+
+		// List collections
+		await checker.check("LIST COLLECTIONS", () => adapter.listCollections(), res => {
+			console.log(res);
+			return res.length > 0;
+		});
+
+		// Subscribe to changes
+		adapter.subscribeToChanges((err, msg) => {
+			if (err)
+				return console.error(err, msg);
+
+			changes.push(msg.payload);
+			//console.log(msg);
+		});
 
 		// Count of posts
 		await checker.check("COUNT", () => adapter.count(), res => {
@@ -97,6 +113,7 @@ async function start() {
 			{ title: "Last", content: "Last document", votes: 1, status: false, createdAt: Date.now() }
 		]), docs => {
 			console.log("Saved: ", docs);
+			docs.sort((a, b) => b.votes - a.votes); // Sort by votes desc
 			ids[1] = docs[0]._id;
 			ids[2] = docs[1]._id;
 
@@ -124,7 +141,6 @@ async function start() {
 			console.log(res);
 			return res.length == 1 && res[0]._id == ids[0];
 		});
-
 		
 		// Find
 		await checker.check("FIND by query ($gt)", () => adapter.find({ query: "row.votes > 2", sort: "-votes" }), res => {
@@ -142,7 +158,7 @@ async function start() {
 			return res == 2;
 		});
 		
-		// Find
+		// Find full-text search
 		await checker.check("FIND by text search", () => adapter.find({ search: "%content%", searchFields: ["content"] }), res => {
 			console.log(res);
 			return [
@@ -197,13 +213,13 @@ async function start() {
 			status: false
 		}), count => {
 			console.log("Updated: ", count);
-			//return count == 2; TODO:
+			return count == 2;
 		});
 		
 		// Remove by query
 		await checker.check("REMOVE BY QUERY", () => adapter.removeMany("row.votes < 5"), count => {
 			console.log("Removed: ", count);
-			//return count == 2; TODO:
+			return count == 2;
 		});
 
 		// Count of posts
@@ -229,7 +245,26 @@ async function start() {
 			console.log(res);
 			return res == 0;
 		});
-		
+
+		await Promise.delay(1000);
+		await checker.check("CHECK CHANGES", () => changes, changes => {
+			const len = changes.length;
+			const keys = ids.map(id => id.split("/")[1]);
+			console.log(`Changes (${len}): `, changes);
+			return [
+				len == 9,
+				changes[0].title === "Hello",
+				changes[1].title === "Second" || changes[1].title === "Last",
+				changes[2].title === "Last" || changes[2].title === "Second",
+				changes[3].title === "Last 2",
+				(changes[4].title === "Last 2" || changes[4].title === "Hello") && changes[4].status === false,
+				(changes[5].title === "Hello" || changes[5].title === "Last 2") && changes[5].status === false,
+				changes[6]._delete === true && (changes[6]._key == keys[0] || changes[6]._key == keys[2]),
+				changes[7]._delete === true && (changes[7]._key == keys[0] || changes[7]._key == keys[2]),
+				changes[8]._delete === true && changes[8]._key == keys[1],
+			];
+		});
+
 	} catch(err) {
 		console.error(err);
 	}
