@@ -109,12 +109,12 @@ class MacroMetaAdapter {
 
 		if (this.opts.tenant) {
 			this.logger.info(`Switch tenant to '${this.opts.tenant}'`);
-			await this.fabric.useTenant(this.opts.tenant);
+			this.fabric.useTenant(this.opts.tenant);
 		}
 
 		if (this.opts.fabric) {
 			this.logger.info(`Switch Fabric to '${this.opts.fabric}'`);
-			await this.fabric.useFabric(this.opts.fabric);
+			this.fabric.useFabric(this.opts.fabric);
 		}
 	}
 
@@ -217,7 +217,7 @@ class MacroMetaAdapter {
 	}
 
 	/**
-	 * Get count of filtered entites.
+	 * Get count of filtered entities.
 	 *
 	 * Available query props:
 	 *  - search

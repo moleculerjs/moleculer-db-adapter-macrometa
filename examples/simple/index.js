@@ -11,6 +11,9 @@ const broker = new ServiceBroker({
 	logger: true,
 	logLevel: "debug"
 });
+/**
+ * @type {MacroMetaAdapter}
+ */
 let adapter;
 
 // Load my service
@@ -32,9 +35,17 @@ broker.createService(StoreService, {
 	settings: {},
 
 	async afterConnected() {
-		adapter = this.adapter;
-		await this.adapter.clear();
-		//await this.adapter.collection.createFulltextIndex(["title", "content"]);
+		try {
+			adapter = this.adapter;
+			await this.adapter.clear();
+			// Currently only supports one elem. More info: https://dev.macrometa.io/docs/indexes-1#collectioncreatefulltextindex
+			// Throws an error if 2 elems.
+			// await this.adapter.collection.createFulltextIndex(["title", "content"]);
+			await this.adapter.collection.createFulltextIndex(["title"]);
+		} catch (error) {
+			this.broker.logger.error("An error ocurred in afterConnected() method");
+			throw error;
+		}
 	}
 });
 
