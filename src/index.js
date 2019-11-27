@@ -11,7 +11,7 @@ const Promise		= require("bluebird");
 const { ServiceSchemaError, MoleculerError } = require("moleculer").Errors;
 
 const FabricClient = require("jsc8");
-// const c8ql = FabricClient.c8ql;
+const c8ql = FabricClient.c8ql;
 
 // Imports to add some IntelliSense
 const { Service, ServiceBroker } = require("moleculer");
@@ -55,7 +55,7 @@ class MacroMetaAdapter {
 		}
 
 		if (!this.opts.auth.email || !this.opts.auth.password) {
-			throw new MoleculerError("The `email` and `password` fields are required to connect with Macrometa Services!");
+			throw new MoleculerError("The `email` and `password` fields are required to connect to Macrometa!");
 		}
 	}
 
@@ -67,10 +67,10 @@ class MacroMetaAdapter {
 	 * @memberof MacroMetaAdapter
 	 */
 	async connect() {
-		 /**
+		/**
 		 * @type {Fabric}
 		 */
-		this.fabric = new Fabric(this.opts.config);
+		this.fabric = new FabricClient(this.opts.config);
 
 		await this.login(this.opts.auth.email, this.opts.auth.password);
 

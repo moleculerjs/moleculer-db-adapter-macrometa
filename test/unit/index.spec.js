@@ -22,11 +22,7 @@ const mockDB = {
 	useFabric: jest.fn(() => Promise.resolve()),
 	query: jest.fn(() => Promise.resolve()),
 	// Mock the collection
-	collection: jest.fn(() => {
-		return {
-			exists: jest.fn(() => Promise.resolve())
-		}
-	}),
+	collection: mockCollection
 };
 
 FabricClient.mockImplementation(() =>  mockDB);
@@ -62,7 +58,8 @@ describe("Test MacroMetaAdapter", () => {
 			expect(adapter.opts).toEqual({auth:{}});
 		});
 	});
-	
+
+
 	describe("Test MacroMetaAdapter's methods", () => {
 		const broker = new ServiceBroker();
 		const service = broker.createService({
@@ -130,7 +127,7 @@ describe("Test MacroMetaAdapter", () => {
 				try {
 					adapter.init(broker, svc);	
 				} catch (error) {
-					expect(error.message).toBe("The `email` and `password` fields are required to connect with Macrometa Services!");	
+					expect(error.message).toBe("The `email` and `password` fields are required to connect to Macrometa!");	
 				}
 			});
 
@@ -147,12 +144,11 @@ describe("Test MacroMetaAdapter", () => {
 				try {
 					adapter.init(broker, svc);	
 				} catch (error) {
-					expect(error.message).toBe("The `email` and `password` fields are required to connect with Macrometa Services!");	
+					expect(error.message).toBe("The `email` and `password` fields are required to connect to Macrometa!");	
 				}
 			});
 		});
 
-		
 		describe("Test connect and disconnect", () => {
 			it("should connect", async () => {
 				expect.assertions(2);
@@ -174,7 +170,7 @@ describe("Test MacroMetaAdapter", () => {
 			});			
 		});
 
-		
+
 		it("should throw an error while 'openCollection' - collection doesn't exists", async () => {
 			expect.assertions(1);
 			adapter.init(broker, service)
@@ -199,7 +195,5 @@ describe("Test MacroMetaAdapter", () => {
 			expect(adapter.fabric.collection).toHaveBeenCalledTimes(1);
 			expect(mockExists).toHaveBeenCalledTimes(1);
 		});
-		
-	});
+	})
 });
-
