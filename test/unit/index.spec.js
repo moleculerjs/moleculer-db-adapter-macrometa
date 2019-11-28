@@ -550,112 +550,113 @@ describe("Test MacroMetaAdapter", () => {
 
 			it("call subscribeToChanges - onopen", async () => {
 				const cb = jest.fn((error, data) => {
-					if (error) return error
-					return data
+					if (error) return error;
+					return data;
 				});
 	
 				adapter.collection.onChange = jest.fn((callbackObj, dcName, subscriptionName) => {
 					const  { onopen } = callbackObj;
-					setTimeout(() => onopen(), 1000)
-				})
+					setTimeout(() => onopen(), 1000);
+				});
 	
-				let promise = adapter.subscribeToChanges(cb)
+				let promise = adapter.subscribeToChanges(cb);
 	
-				clock.tick(5000)
+				clock.tick(5000);
 	
 				
-				expect(promise).toBeTruthy()
+				expect(promise).toBeTruthy();
 				expect(adapter.collection.onChange).toBeCalledTimes(1);
-				expect(cb).toBeCalledTimes(0)
+				expect(cb).toBeCalledTimes(0);
 			});
 	
 			it("call subscribeToChanges - onclose", async () => {
 				const cb = jest.fn((error, data) => {
-					if (error) return error
-					return data
+					if (error) return error;
+					return data;
 				});
 	
 				adapter.collection.onChange = jest.fn((callbackObj, dcName, subscriptionName) => {
 					const  { onclose } = callbackObj;
-					setTimeout(() => onclose(), 1000)
-				})
+					setTimeout(() => onclose(), 1000);
+				});
 	
-				let promise = adapter.subscribeToChanges(cb)
+				let promise = adapter.subscribeToChanges(cb);
 	
-				clock.tick(5000)
+				clock.tick(5000);
 				
-				expect(promise).toBeTruthy()
+				expect(promise).toBeTruthy();
 				expect(adapter.collection.onChange).toBeCalledTimes(1);
-				expect(cb).toBeCalledTimes(0)
+				expect(cb).toBeCalledTimes(0);
 			});
 	
 			it("call subscribeToChanges - onmessage - callback data", async () => {
 				const cb = jest.fn((error, data) => {
-					if (error) return error
-					return data
+					if (error) return error;
+					return data;
 				});
 	
 				adapter.collection.onChange = jest.fn((callbackObj, dcName, subscriptionName) => {
 					const  { onmessage } = callbackObj;
-					setTimeout(() => onmessage('{ "payload":  "eyAiZGF0YSI6ICJjaGFuZ2UgbWVzc2FnZSIgfQ==" }'), 1000)
-				})
+					setTimeout(() => onmessage("{ \"payload\":  \"eyAiZGF0YSI6ICJjaGFuZ2UgbWVzc2FnZSIgfQ==\" }"), 1000);
+				});
 	
-				let promise = adapter.subscribeToChanges(cb)
+				let promise = adapter.subscribeToChanges(cb);
 	
-				clock.tick(5000)
+				clock.tick(5000);
 				
-				expect(promise).toBeTruthy()
+				expect(promise).toBeTruthy();
 				expect(adapter.collection.onChange).toBeCalledTimes(1);
-				expect(cb).toBeCalledTimes(1)
-				expect(cb).toBeCalledWith(null, {payload: { data: 'change message'} })
+				expect(cb).toBeCalledTimes(1);
+				expect(cb).toBeCalledWith(null, {payload: { data: "change message"} });
 			});
 
 			it("call subscribeToChanges - onmessage - callback data", async () => {
 				const cb = jest.fn((error, data) => {
-					if (error) return error
-					return data
+					if (error) return error;
+					return data;
 				});
 	
 				adapter.collection.onChange = jest.fn((callbackObj, dcName, subscriptionName) => {
 					const  { onmessage } = callbackObj;
-					setTimeout(() => onmessage('{ "payload":  "dummy" }'), 1000)
-				})
+					setTimeout(() => onmessage("{ \"payload\":  \"dummy\" }"), 1000);
+				});
 	
-				let promise = adapter.subscribeToChanges(cb)
+				let promise = adapter.subscribeToChanges(cb);
 	
-				clock.tick(5000)
+				clock.tick(5000);
 				
-				expect(promise).toBeTruthy()
+				expect(promise).toBeTruthy();
 				expect(adapter.collection.onChange).toBeCalledTimes(1);
-				expect(cb).toBeCalledTimes(1)
-				expect(cb.mock.calls[0][0].message).toBe('Unexpected token v in JSON at position 0')
-				expect(cb.mock.calls[0][1]).toBe('{ "payload":  "dummy" }')
+				expect(cb).toBeCalledTimes(1);
+				expect(cb.mock.calls[0][0].message).toBe("Unexpected token v in JSON at position 0");
+				expect(cb.mock.calls[0][1]).toBe("{ \"payload\":  \"dummy\" }");
 			});
 	
 			it("call subscribeToChanges - onerror & disconnected", async () => {
 				const cb = jest.fn((error, data) => {
-					if (error) return error
-					return data
+					if (error) return error;
+					return data;
 				});
 	
 				adapter.collection.onChange = jest.fn((callbackObj, dcName, subscriptionName) => {
 					const  { onerror } = callbackObj;
-					setTimeout(() => onerror('ERROR'), 1000)
-				})
+					setTimeout(() => onerror("ERROR"), 1000);
+				});
 	
-				let promise = adapter.subscribeToChanges(cb)
+				let promise = adapter.subscribeToChanges(cb);
 	
-				clock.tick(5000)
+				clock.tick(5000);
 	
+				expect.assertions(3);
 				try {
-					await promise
+					await promise;
 				} catch (error) {
-					expect(error).toBe('ERROR')
+					expect(error).toBe("ERROR");
 					expect(adapter.collection.onChange).toBeCalledTimes(1);
-					expect(cb).toBeCalledTimes(0)
+					expect(cb).toBeCalledTimes(0);
 				}
 			});
-		})
+		});
 
 		it("call unsubscribeFromChanges", () => {
 			adapter.unsubscribeFromChanges();
