@@ -566,6 +566,12 @@ describe("Test MacroMetaAdapter", () => {
 				
 				expect(promise).toBeTruthy();
 				expect(adapter.collection.onChange).toBeCalledTimes(1);
+				expect(adapter.collection.onChange).toBeCalledWith({
+					onopen: expect.any(Function),
+					onerror: expect.any(Function),
+					onmessage: expect.any(Function),
+					onclose: expect.any(Function)
+				}, "gdn1.macrometa.io", undefined);
 				expect(cb).toBeCalledTimes(0);
 			});
 	
@@ -580,12 +586,18 @@ describe("Test MacroMetaAdapter", () => {
 					setTimeout(() => onclose(), 1000);
 				});
 	
-				let promise = adapter.subscribeToChanges(cb);
+				let promise = adapter.subscribeToChanges(cb, "mySubscription");
 	
 				clock.tick(5000);
 				
 				expect(promise).toBeTruthy();
 				expect(adapter.collection.onChange).toBeCalledTimes(1);
+				expect(adapter.collection.onChange).toBeCalledWith({
+					onopen: expect.any(Function),
+					onerror: expect.any(Function),
+					onmessage: expect.any(Function),
+					onclose: expect.any(Function)
+				}, "gdn1.macrometa.io", "mySubscription");				
 				expect(cb).toBeCalledTimes(0);
 			});
 	
@@ -633,28 +645,24 @@ describe("Test MacroMetaAdapter", () => {
 			});
 	
 			it("call subscribeToChanges - onerror & disconnected", async () => {
-				const cb = jest.fn((error, data) => {
-					if (error) return error;
-					return data;
-				});
+				const cb = jest.fn();
 	
 				adapter.collection.onChange = jest.fn((callbackObj, dcName, subscriptionName) => {
 					const  { onerror } = callbackObj;
-					setTimeout(() => onerror("ERROR"), 1000);
+					setTimeout(() => onerror(new Error("Something happened")), 1000);
 				});
-	
-				let promise = adapter.subscribeToChanges(cb);
-	
-				clock.tick(5000);
-	
+
 				expect.assertions(3);
-				try {
-					await promise;
-				} catch (error) {
-					expect(error).toBe("ERROR");
+
+				let promise = adapter.subscribeToChanges(cb).catch(error => {
+					expect(error.message).toBe("Something happened");
 					expect(adapter.collection.onChange).toBeCalledTimes(1);
 					expect(cb).toBeCalledTimes(0);
-				}
+				});
+	
+				clock.tick(5000);
+
+				return promise;
 			});
 		});
 
