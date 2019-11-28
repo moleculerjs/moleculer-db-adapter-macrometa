@@ -561,10 +561,10 @@ class MacroMetaAdapter {
 	}
 
 	/**
-	 * Convert the `sort` param to a `sort` object to Mongo queries.
+	 * Convert the `sort` param to a `sort` object to MacroMeta queries.
 	 *
 	 * @param {String|Array<String>|Object} paramSort
-	 * @returns {Object} Return with a sort object like `{ "votes": 1, "title": -1 }`
+	 * @returns {String}
 	 * @memberof MacroMetaAdapter
 	 */
 	transformSort(paramSort) {
