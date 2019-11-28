@@ -296,13 +296,12 @@ class MacroMetaAdapter {
 	 */
 	async updateMany(query, update, opts) {
 		const cursor = await this.fabric.query(`
-			FOR row IN ${this.collection.name} 
+			FOR row IN ${this.collection.name}
 			  ${this.transformQuery(query)}
 			  UPDATE row WITH
-			    ${JSON.stringify(update)}
+			    ${JSON.stringify(update.$set)}
 			  IN ${this.collection.name}
-			  RETURN NEW._id
-			  `, {}, opts);
+			  RETURN NEW._id`, {}, opts);
 
 		const res = await cursor.all();
 		//cursor.delete(); // no 'await' because we don't want to wait for it.
@@ -321,7 +320,7 @@ class MacroMetaAdapter {
 	 * @memberof MacroMetaAdapter
 	 */
 	async updateById(_id, update, opts) {
-		const res = await this.collection.update(_id, update, Object.assign({ returnNew : true }, opts));
+		const res = await this.collection.update(_id, update.$set, Object.assign({ returnNew : true }, opts));
 		return res ? res["new"] : null;
 	}
 
@@ -516,7 +515,7 @@ class MacroMetaAdapter {
 
 			// Filtering
 			if (params.query) {
-				q.push(this.transformQuery(params.query));
+				q.push("  " + this.transformQuery(params.query));
 			}
 
 			// Sort
@@ -554,9 +553,9 @@ class MacroMetaAdapter {
 	 */
 	transformQuery(query) {
 		if (_.isObject(query)) {
-			return Object.keys(query).map(key => `  FILTER row.${key} == ${JSON.stringify(query[key])}`).join("\n");
+			return Object.keys(query).map(key => `FILTER row.${key} == ${JSON.stringify(query[key])}`).join("\n");
 		} else if (_.isString(query)) {
-			return `  FILTER ${query}`;
+			return `FILTER ${query}`;
 		}
 	}
 
@@ -584,6 +583,38 @@ class MacroMetaAdapter {
 		return null;
 	}
 
+	/**
+	* For compatibility only. 
+	* @param {Object} entity
+	* @param {String} idField
+	* @memberof MacroMetaAdapter
+	* @returns {Object} Modified entity
+	*/
+	beforeSaveTransformID (entity, idField) {
+		return entity;
+	}
+
+	/**
+	* For compatibility only. 
+	* @param {Object} entity
+	* @param {String} idField
+	* @memberof MacroMetaAdapter
+	* @returns {Object} Modified entity
+	*/
+	afterRetrieveTransformID (entity, idField) {
+		return entity;
+	}	
+
+	/**
+	 * Convert DB entity to JSON object
+	 *
+	 * @param {any} entity
+	 * @returns {Object}
+	 * @memberof MacroMetaAdapter
+	 */
+	entityToObject(entity) {
+		return entity;
+	}
 }
 
 module.exports = MacroMetaAdapter;

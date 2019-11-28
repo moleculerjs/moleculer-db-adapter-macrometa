@@ -20,12 +20,11 @@ class ModuleChecker {
 	async check(title, fn, cb) {
 		this.printTitle(title);
 		const startTime = process.hrtime();
-		let dur;
 		try {
 			const rsp = await fn();
 
 			const diff = process.hrtime(startTime);
-			dur = (diff[0] + diff[1] / 1e9) * 1000;
+			const dur = (diff[0] + diff[1] / 1e9) * 1000;
 			
 			let res = cb(rsp);
 			if (Array.isArray(res))
@@ -33,12 +32,13 @@ class ModuleChecker {
 			else if (res != null)
 				this.checkValid(res);
 
+			console.log(kleur.grey(`Time: ${dur.toFixed(2)} ms`));
+
 		} catch(err) {
 			console.error(kleur.red().bold(err.name, err.message));
 			console.error(err);
 			this.fail++;
 		}
-		console.log(kleur.grey(`Time: ${dur.toFixed(2)} ms`));
 	}
 
 	printTitle(text) {

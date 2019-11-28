@@ -297,7 +297,7 @@ describe("Test MacroMetaAdapter", () => {
 				const query = "row.votes > 2";
 
 				const actual = adapter.transformQuery(query);
-				const expected = "  FILTER row.votes > 2";
+				const expected = "FILTER row.votes > 2";
 
 				expect(actual).toBe(expected);
 			});
@@ -306,7 +306,16 @@ describe("Test MacroMetaAdapter", () => {
 				const query = { title: "Last" };
 				
 				const actual = adapter.transformQuery(query);
-				const expected = "  FILTER row.title == \"Last\"";
+				const expected = "FILTER row.title == \"Last\"";
+
+				expect(actual).toBe(expected);
+			});
+
+			it("call with multiple fields as Object", () => {
+				const query = { title: "Last", votes: 3 };
+				
+				const actual = adapter.transformQuery(query);
+				const expected = "FILTER row.title == \"Last\"\nFILTER row.votes == 3";
 
 				expect(actual).toBe(expected);
 			});
@@ -332,6 +341,33 @@ describe("Test MacroMetaAdapter", () => {
 
 				const actual = adapter.transformSort(query);
 				const expected = "row.votes DESC";
+
+				expect(actual).toBe(expected);
+			});
+
+			it("call with multi sorting as String (,)", () => {
+				const query = "-votes,createdAt";
+
+				const actual = adapter.transformSort(query);
+				const expected = "row.votes DESC, row.createdAt";
+
+				expect(actual).toBe(expected);
+			});
+
+			it("call with multi sorting as String ( )", () => {
+				const query = "-votes createdAt";
+
+				const actual = adapter.transformSort(query);
+				const expected = "row.votes DESC, row.createdAt";
+
+				expect(actual).toBe(expected);
+			});
+
+			it("call with multi sorting as Array", () => {
+				const query = ["-votes", "createdAt"];
+
+				const actual = adapter.transformSort(query);
+				const expected = "row.votes DESC, row.createdAt";
 
 				expect(actual).toBe(expected);
 			});
@@ -455,9 +491,20 @@ describe("Test MacroMetaAdapter", () => {
 				all: mockCursor
 			})); 
 
-			let result = await adapter.updateMany();
+			let result = await adapter.updateMany({
+				status: false
+			}, { $set: {
+				status: true
+			}}, { a: 5 });
 		
 			expect(adapter.fabric.query).toHaveBeenCalledTimes(1);
+			expect(adapter.fabric.query).toHaveBeenCalledWith(`
+			FOR row IN posts
+			  FILTER row.status == false
+			  UPDATE row WITH
+			    {\"status\":true}
+			  IN posts
+			  RETURN NEW._id`, {}, { a: 5 });
 			expect(mockCursor).toHaveBeenCalledTimes(1);
 			expect(result).toBe(2);
 		});
@@ -466,7 +513,7 @@ describe("Test MacroMetaAdapter", () => {
 
 			adapter.collection.update = jest.fn(() => Promise.resolve({new: {id: 123}}));
 
-			let result = await adapter.updateById("myID", {update: "updateData"});
+			let result = await adapter.updateById("myID", { $set: { update: "updateData" } });
 
 			expect(adapter.collection.update).toHaveBeenCalledTimes(1);
 			expect(adapter.collection.update).toHaveBeenCalledWith("myID", {update: "updateData"}, { returnNew : true });
@@ -477,7 +524,7 @@ describe("Test MacroMetaAdapter", () => {
 
 			adapter.collection.update = jest.fn(() => undefined);
 
-			let result = await adapter.updateById("myID", {update: "updateData"});
+			let result = await adapter.updateById("myID", { $set: { update: "updateData" } });
 
 			expect(adapter.collection.update).toHaveBeenCalledTimes(1);
 			expect(adapter.collection.update).toHaveBeenCalledWith("myID", {update: "updateData"}, { returnNew : true });

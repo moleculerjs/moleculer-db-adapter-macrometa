@@ -169,7 +169,7 @@ async function start() {
 		});
 
 		// Save a query
-		const res = await adapter.saveQuery("mostVoted", "FOR p IN posts FILTER p.votes > @minVotes SORT p.votes DESC");
+		const res = await adapter.saveQuery("mostVoted", "FOR p IN posts FILTER p.votes > @minVotes SORT p.votes DESC RETURN p");
 		console.log(res);
 
 		/* Execute a saved query TODO: not working
@@ -210,19 +210,19 @@ async function start() {
 		
 		// Update a posts
 		const updatedAt = Date.now() - 123;
-		await checker.check("UPDATE", () => adapter.updateById(ids[2], {
+		await checker.check("UPDATE", () => adapter.updateById(ids[2], { $set: {
 			title: "Last 2",
 			updatedAt,
 			status: true
-		}), doc => {
+		}}), doc => {
 			console.log("Updated: ", doc);
 			return doc._id && doc.title === "Last 2" && doc.content === "Last document" && doc.votes === 1 && doc.status === true && doc.updatedAt == updatedAt;
 		});
 		
 		// Update by query
-		await checker.check("UPDATE BY QUERY", () => adapter.updateMany("row.votes < 5", {
+		await checker.check("UPDATE BY QUERY", () => adapter.updateMany("row.votes < 5", { $set: {
 			status: false
-		}), count => {
+		}}), count => {
 			console.log("Updated: ", count);
 			return count == 2;
 		});
