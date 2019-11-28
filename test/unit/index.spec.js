@@ -6,6 +6,8 @@ const MacroMetaAdapter = require("../../src");
 jest.mock("jsc8");
 const FabricClient = require("jsc8");
 
+const lolex = require("lolex");
+
 const mockCollection = {
 	exists: jest.fn(() => Promise.resolve()),
 	create: jest.fn(() => Promise.resolve()),
@@ -540,10 +542,120 @@ describe("Test MacroMetaAdapter", () => {
 			expect(adapter.fabric.executeSavedQuery).toHaveBeenCalledWith("myName", {variables: "myVariables"});
 		});
 
-		it("call subscribeToChanges", () => {
-			adapter.subscribeToChanges();
-			expect(adapter.collection.onChange).toBeCalledTimes(1);
-		});
+		describe("Test openCollection", () => {
+
+			let clock;
+			beforeAll(()=> clock = lolex.install());
+			afterAll(() => clock.uninstall());
+
+			it("call subscribeToChanges - onopen", async () => {
+				const cb = jest.fn((error, data) => {
+					if (error) return error
+					return data
+				});
+	
+				adapter.collection.onChange = jest.fn((callbackObj, dcName, subscriptionName) => {
+					const  { onopen } = callbackObj;
+					setTimeout(() => onopen(), 1000)
+				})
+	
+				let promise = adapter.subscribeToChanges(cb)
+	
+				clock.tick(5000)
+	
+				
+				expect(promise).toBeTruthy()
+				expect(adapter.collection.onChange).toBeCalledTimes(1);
+				expect(cb).toBeCalledTimes(0)
+			});
+	
+			it("call subscribeToChanges - onclose", async () => {
+				const cb = jest.fn((error, data) => {
+					if (error) return error
+					return data
+				});
+	
+				adapter.collection.onChange = jest.fn((callbackObj, dcName, subscriptionName) => {
+					const  { onclose } = callbackObj;
+					setTimeout(() => onclose(), 1000)
+				})
+	
+				let promise = adapter.subscribeToChanges(cb)
+	
+				clock.tick(5000)
+				
+				expect(promise).toBeTruthy()
+				expect(adapter.collection.onChange).toBeCalledTimes(1);
+				expect(cb).toBeCalledTimes(0)
+			});
+	
+			it("call subscribeToChanges - onmessage - callback data", async () => {
+				const cb = jest.fn((error, data) => {
+					if (error) return error
+					return data
+				});
+	
+				adapter.collection.onChange = jest.fn((callbackObj, dcName, subscriptionName) => {
+					const  { onmessage } = callbackObj;
+					setTimeout(() => onmessage('{ "payload":  "eyAiZGF0YSI6ICJjaGFuZ2UgbWVzc2FnZSIgfQ==" }'), 1000)
+				})
+	
+				let promise = adapter.subscribeToChanges(cb)
+	
+				clock.tick(5000)
+				
+				expect(promise).toBeTruthy()
+				expect(adapter.collection.onChange).toBeCalledTimes(1);
+				expect(cb).toBeCalledTimes(1)
+				expect(cb).toBeCalledWith(null, {payload: { data: 'change message'} })
+			});
+
+			it("call subscribeToChanges - onmessage - callback data", async () => {
+				const cb = jest.fn((error, data) => {
+					if (error) return error
+					return data
+				});
+	
+				adapter.collection.onChange = jest.fn((callbackObj, dcName, subscriptionName) => {
+					const  { onmessage } = callbackObj;
+					setTimeout(() => onmessage('{ "payload":  "dummy" }'), 1000)
+				})
+	
+				let promise = adapter.subscribeToChanges(cb)
+	
+				clock.tick(5000)
+				
+				expect(promise).toBeTruthy()
+				expect(adapter.collection.onChange).toBeCalledTimes(1);
+				expect(cb).toBeCalledTimes(1)
+				expect(cb.mock.calls[0][0].message).toBe('Unexpected token v in JSON at position 0')
+				expect(cb.mock.calls[0][1]).toBe('{ "payload":  "dummy" }')
+			});
+	
+			it("call subscribeToChanges - onerror & disconnected", async () => {
+				const cb = jest.fn((error, data) => {
+					if (error) return error
+					return data
+				});
+	
+				adapter.collection.onChange = jest.fn((callbackObj, dcName, subscriptionName) => {
+					const  { onerror } = callbackObj;
+					setTimeout(() => onerror('ERROR'), 1000)
+				})
+	
+				let promise = adapter.subscribeToChanges(cb)
+	
+				clock.tick(5000)
+	
+				try {
+					await promise
+				} catch (error) {
+					expect(error).toBe('ERROR')
+					expect(adapter.collection.onChange).toBeCalledTimes(1);
+					expect(cb).toBeCalledTimes(0)
+				}
+			});
+		})
 
 		it("call unsubscribeFromChanges", () => {
 			adapter.unsubscribeFromChanges();
