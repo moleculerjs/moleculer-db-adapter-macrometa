@@ -11,11 +11,10 @@ const Promise		= require("bluebird");
 const { ServiceSchemaError, MoleculerError } = require("moleculer").Errors;
 
 const FabricClient = require("jsc8");
-const c8ql = FabricClient.c8ql;
 
 // Imports to add some IntelliSense
-const { Service, ServiceBroker } = require("moleculer");
-const { DocumentCollection, Fabric, ArrayCursor } = require("jsc8");
+const { Service, ServiceBroker } = require("moleculer"); // eslint-disable-line no-unused-vars
+const { DocumentCollection, Fabric, ArrayCursor } = require("jsc8"); // eslint-disable-line no-unused-vars
 
 class MacroMetaAdapter {
 
@@ -51,7 +50,7 @@ class MacroMetaAdapter {
 		const schema = this.service.schema;
 
 		if (!schema.collection) {
-			throw new ServiceSchemaError("Missing `collection` definition in schema of service!");
+			schema.collection = this.service.name;
 		}
 
 		if (!this.opts.auth.email || !this.opts.auth.password) {
@@ -272,7 +271,6 @@ class MacroMetaAdapter {
 	 * @memberof MacroMetaAdapter
 	 */
 	async insertMany(entities, opts) {
-		// TODO: is there bulk insert method?
 		// return Promise.all(entities.map(entity => this.insert(entity, opts)));
 		const cursor = await this.fabric.query(`
 			FOR entity IN ${JSON.stringify(entities)}

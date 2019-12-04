@@ -31,9 +31,6 @@ broker.createService(StoreService, {
 		fabric: null
 	}),
 
-	collection: "posts",
-	settings: {},
-
 	async afterConnected() {
 		try {
 			adapter = this.adapter;
