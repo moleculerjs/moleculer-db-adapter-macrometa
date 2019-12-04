@@ -127,17 +127,6 @@ describe("Test MacroMetaAdapter", () => {
 		});
 		
 		describe("Test init", () => {
-			it("should throw an error - no collection name", () => {
-				const svc = broker.createService({
-					name: "store",
-				});
-
-				try {
-					adapter.init(broker, svc);	
-				} catch (error) {
-					expect(error.message).toBe("Missing `collection` definition in schema of service!");	
-				}
-			});
 			
 			it("should throw an error - no email", () => {
 				const svc = broker.createService({
@@ -146,6 +135,7 @@ describe("Test MacroMetaAdapter", () => {
 				});
 				const adapter = new MacroMetaAdapter({config: "https://gdn1.macrometa.io"});
 
+				expect.assertions(1);
 				try {
 					adapter.init(broker, svc);	
 				} catch (error) {
@@ -163,11 +153,26 @@ describe("Test MacroMetaAdapter", () => {
 					auth: { email: "example@example.com" }
 				});
 
+				expect.assertions(1);
 				try {
 					adapter.init(broker, svc);	
 				} catch (error) {
 					expect(error.message).toBe("The `email` and `password` fields are required to connect to Macrometa!");	
 				}
+			});
+
+			it("should use service name for collection", () => {
+				const svc = broker.createService({
+					name: "posts"
+				});
+				const adapter = new MacroMetaAdapter({
+					config: "https://gdn1.macrometa.io",
+					auth: { email: "example@example.com", password: "pass" }
+				});
+
+				adapter.init(broker, svc);	
+
+				expect(svc.schema.collection).toBe("posts");
 			});
 		});
 
