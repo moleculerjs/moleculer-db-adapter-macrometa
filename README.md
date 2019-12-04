@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/moleculerjs/moleculer-db-adapter-macrometa/badge.svg?branch=master)](https://coveralls.io/github/moleculerjs/moleculer-db-adapter-macrometa?branch=master)
 [![Known Vulnerabilities](https://snyk.io/test/github/moleculerjs/moleculer-db-adapter-macrometa/badge.svg)](https://snyk.io/test/github/moleculerjs/moleculer-db-adapter-macrometa)
 
-# [WIP] moleculer-db-adapter-macrometa [![NPM version](https://img.shields.io/npm/v/moleculer-db-adapter-macrometa.svg)](https://www.npmjs.com/package/moleculer-db-adapter-macrometa)
+# moleculer-db-adapter-macrometa [![NPM version](https://img.shields.io/npm/v/moleculer-db-adapter-macrometa.svg)](https://www.npmjs.com/package/moleculer-db-adapter-macrometa)
 
 Moleculer Data access service for [MacroMeta.co](https://www.macrometa.co/).
 
