@@ -62,21 +62,27 @@ broker.start()
 ```
 
 ### Raw queries
-You can reach the `sequelize` instance via `this.adapter.db`. To call [Raw queries](http://docs.sequelizejs.com/manual/raw-queries.html):
-
 ```js
 // posts.service.js
 module.exports = {
     name: "posts",
     adapter: new MacroMetaAdapter(),
     actions: {
-        findHello2() {
-            return this.adapter.db.query("SELECT * FROM posts WHERE title = 'Hello 2' LIMIT 1")
-                .then(([res, metadata]) => res);
+        getMaxVotes() {
+            return this.adapter.rawQuery(`
+                FOR post IN posts
+                FILTER post.status == true && post.votes > @minVotes
+                SORT post.createdAt DESC
+                LIMIT 3
+                RETURN post._id
+                `, { minVotes: 2 }, {});
         }
     }
 }
 ```
+>More info about C8QL: https://dev.macrometa.io/docs/introduction-1
+
+>You have direct access for the `this.collection` & `this.fabric` instances inside the services.
 
 ### Subscribe to changes
 ```js
