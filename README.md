@@ -26,11 +26,10 @@ npm install moleculer-db-adapter-macrometa --save
 const { ServiceBroker } = require("moleculer");
 const DbService = require("moleculer-db");
 const MacroMetaAdapter = require("moleculer-db-adapter-macrometa");
-const Sequelize = require("sequelize");
 
 const broker = new ServiceBroker();
 
-// Create a Sequelize service for `post` entities
+// Create a service for `post` Macrometa collection
 broker.createService({
     name: "posts",
     mixins: [DbService],
@@ -66,6 +65,7 @@ broker.start()
 // posts.service.js
 module.exports = {
     name: "posts",
+    mixins: [DbService],
     adapter: new MacroMetaAdapter(),
     actions: {
         getMaxVotes() {
@@ -89,6 +89,7 @@ module.exports = {
 // posts.service.js
 module.exports = {
     name: "posts",
+    mixins: [DbService],
     adapter: new MacroMetaAdapter(),
     methods: {
         onChanges(payload) {
