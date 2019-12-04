@@ -35,16 +35,16 @@ broker.createService({
     name: "posts",
     mixins: [DbService],
     adapter: new MacroMetaAdapter({
-		config: "https://gdn1.macrometa.io",
+        config: "https://gdn1.macrometa.io",
 
-		auth: {
-			email: "macrometa@moleculer.services",
-			password: "secretpass"
-		},
+        auth: {
+            email: "macrometa@moleculer.services",
+            password: "secretpass"
+        },
 
-		tenant: null, // use default
-		fabric: null // use default
-	}),
+        tenant: null, // use default
+        fabric: null // use default
+    }),
     collection: "posts" // Name of collection
 });
 
@@ -67,8 +67,8 @@ You can reach the `sequelize` instance via `this.adapter.db`. To call [Raw queri
 ```js
 // posts.service.js
 module.exports = {
-	name: "posts",
-	adapter: new MacroMetaAdapter(),
+    name: "posts",
+    adapter: new MacroMetaAdapter(),
     actions: {
         findHello2() {
             return this.adapter.db.query("SELECT * FROM posts WHERE title = 'Hello 2' LIMIT 1")
@@ -82,25 +82,25 @@ module.exports = {
 ```js
 // posts.service.js
 module.exports = {
-	name: "posts",
-	adapter: new MacroMetaAdapter(),
-	methods: {
-		onChanges(payload) {
-			this.logger.info("Collection has been changed", payload);
-		}
-	},
-	async started() {
-		await this.adapter.subscribeToChanges((err msg) => {
-			if (err)
-				return this.logger.error("Subscription error", err);
+    name: "posts",
+    adapter: new MacroMetaAdapter(),
+    methods: {
+        onChanges(payload) {
+            this.logger.info("Collection has been changed", payload);
+        }
+    },
+    async started() {
+        await this.adapter.subscribeToChanges((err msg) => {
+            if (err)
+                return this.logger.error("Subscription error", err);
 
-			this.onChanges(msg.payload);
-		});
-	},
+            this.onChanges(msg.payload);
+        });
+    },
 
-	async stopped() {
-		await this.adapter.unsubscribeFromChanges();
-	}
+    async stopped() {
+        await this.adapter.unsubscribeFromChanges();
+    }
 }
 ```
 
