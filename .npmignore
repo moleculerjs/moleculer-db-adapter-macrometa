@@ -1,4 +1,4 @@
 .vscode
-.coverage
-.examples
+coverage
+examples
 test
