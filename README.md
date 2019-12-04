@@ -1,22 +1,114 @@
 ![Moleculer logo](http://moleculer.services/images/banner.png)
 
-[![Build Status](https://travis-ci.org/moleculerjs/moleculer-macrometa.svg?branch=master)](https://travis-ci.org/moleculerjs/moleculer-macrometa)
-[![Coverage Status](https://coveralls.io/repos/github/moleculerjs/moleculer-macrometa/badge.svg?branch=master)](https://coveralls.io/github/moleculerjs/moleculer-macrometa?branch=master)
-[![Known Vulnerabilities](https://snyk.io/test/github/moleculerjs/moleculer-macrometa/badge.svg)](https://snyk.io/test/github/moleculerjs/moleculer-macrometa)
+[![Build Status](https://travis-ci.org/moleculerjs/moleculer-db-adapter-macrometa.svg?branch=master)](https://travis-ci.org/moleculerjs/moleculer-db-adapter-macrometa)
+[![Coverage Status](https://coveralls.io/repos/github/moleculerjs/moleculer-db-adapter-macrometa/badge.svg?branch=master)](https://coveralls.io/github/moleculerjs/moleculer-db-adapter-macrometa?branch=master)
+[![Known Vulnerabilities](https://snyk.io/test/github/moleculerjs/moleculer-db-adapter-macrometa/badge.svg)](https://snyk.io/test/github/moleculerjs/moleculer-db-adapter-macrometa)
 
-# [WIP] moleculer-macrometa [![NPM version](https://img.shields.io/npm/v/moleculer-macrometa.svg)](https://www.npmjs.com/package/moleculer-macrometa)
+# [WIP] moleculer-db-adapter-macrometa [![NPM version](https://img.shields.io/npm/v/moleculer-db-adapter-macrometa.svg)](https://www.npmjs.com/package/moleculer-db-adapter-macrometa)
 
-Data access service for [MacroMeta.co](https://www.macrometa.co/).
+Moleculer Data access service for [MacroMeta.co](https://www.macrometa.co/).
 
 ## Features
+- auto creating collection
+- raw C8QL queries
+- save & execute named queries
+- subscription to collection changes
 
 ## Install
 ```
-npm install moleculer-macrometa --save
+npm install moleculer-db-adapter-macrometa --save
 ```
 
 ## Usage
+```js
+"use strict";
 
+const { ServiceBroker } = require("moleculer");
+const DbService = require("moleculer-db");
+const MacroMetaAdapter = require("moleculer-db-adapter-macrometa");
+const Sequelize = require("sequelize");
+
+const broker = new ServiceBroker();
+
+// Create a Sequelize service for `post` entities
+broker.createService({
+    name: "posts",
+    mixins: [DbService],
+    adapter: new MacroMetaAdapter({
+		config: "https://gdn1.macrometa.io",
+
+		auth: {
+			email: "macrometa@moleculer.services",
+			password: "secretpass"
+		},
+
+		tenant: null, // use default
+		fabric: null // use default
+	}),
+    collection: "posts" // Name of collection
+});
+
+
+broker.start()
+// Create a new post 
+.then(() => broker.call("posts.create", {
+    title: "My first post",
+    content: "Lorem ipsum...",
+    votes: 0
+}))
+
+// Get all posts
+.then(() => broker.call("posts.find").then(console.log));
+```
+
+### Raw queries
+You can reach the `sequelize` instance via `this.adapter.db`. To call [Raw queries](http://docs.sequelizejs.com/manual/raw-queries.html):
+
+```js
+// posts.service.js
+module.exports = {
+	name: "posts",
+	adapter: new MacroMetaAdapter(),
+    actions: {
+        findHello2() {
+            return this.adapter.db.query("SELECT * FROM posts WHERE title = 'Hello 2' LIMIT 1")
+                .then(([res, metadata]) => res);
+        }
+    }
+}
+```
+
+### Subscribe to changes
+```js
+// posts.service.js
+module.exports = {
+	name: "posts",
+	adapter: new MacroMetaAdapter(),
+	methods: {
+		onChanges(payload) {
+			this.logger.info("Collection has been changed", payload);
+		}
+	},
+	async started() {
+		await this.adapter.subscribeToChanges((err msg) => {
+			if (err)
+				return this.logger.error("Subscription error", err);
+
+			this.onChanges(msg.payload);
+		});
+	},
+
+	async stopped() {
+		await this.adapter.unsubscribeFromChanges();
+	}
+}
+```
+
+### Named queries
+```js
+await this.adapter.saveQuery(name, query, parameters);
+await this.adapter.executeSavedQuery(name,variables);
+```
 
 ## Test
 ```
