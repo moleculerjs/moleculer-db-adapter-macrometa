@@ -6,7 +6,7 @@
 
 # moleculer-db-adapter-macrometa [![NPM version](https://img.shields.io/npm/v/moleculer-db-adapter-macrometa.svg)](https://www.npmjs.com/package/moleculer-db-adapter-macrometa)
 
-Moleculer Data access service for [MacroMeta.co](https://www.macrometa.co/).
+[MacroMeta](https://www.macrometa.co/) adapter for Moleculer DB service.
 
 ## Features
 - auto creating collection
